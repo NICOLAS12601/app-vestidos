@@ -30,9 +30,8 @@ export default function Home() {
             <Link href="#faq" className="hover:text-fuchsia-600">FAQ</Link>
           </nav>
           <div className="flex items-center gap-3">
-            <Link href="/admin/login" className="text-sm hover:text-fuchsia-600">Admin</Link>
-            <Link href="/become-a-lender" className="inline-flex items-center rounded-full bg-fuchsia-600 text-white px-4 py-2 text-sm font-medium hover:bg-fuchsia-500">
-              Become a lender
+            <Link href="/admin/login" className="inline-flex items-center rounded-full bg-fuchsia-600 text-white px-4 py-2 text-sm font-medium hover:bg-fuchsia-500">
+              Admin
             </Link>
           </div>
         </div>
@@ -99,7 +98,7 @@ export default function Home() {
                     type="submit"
                     className="w-full sm:w-auto inline-flex items-center justify-center rounded-xl bg-fuchsia-600 px-6 py-3 text-sm font-semibold text-white hover:bg-fuchsia-500"
                   >
-                    Search dresses
+                    Search clothes
                   </button>
                 </div>
               </form>
