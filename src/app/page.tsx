@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import FAQPage from "./FAQPage";
 
 export default function Home() {
   const featured = [
@@ -26,7 +27,7 @@ export default function Home() {
             <Link href="/search" className="hover:text-fuchsia-600">Browse</Link>
             <Link href="#how" className="hover:text-fuchsia-600">How it works</Link>
             <Link href="#featured" className="hover:text-fuchsia-600">Featured</Link>
-            <Link href="/faq" className="hover:text-fuchsia-600">FAQ</Link>
+            <Link href="#faq" className="hover:text-fuchsia-600">FAQ</Link>
           </nav>
           <div className="flex items-center gap-3">
             <Link href="/admin/login" className="text-sm hover:text-fuchsia-600">Admin</Link>
@@ -162,6 +163,12 @@ export default function Home() {
               ))}
             </div>
           </div>
+        </section>
+
+        <section id="faq">
+            <div>
+              <FAQPage />
+            </div>
         </section>
 
         <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
