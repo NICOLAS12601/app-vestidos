@@ -169,29 +169,6 @@ export default function Home() {
               <FAQPage />
             </div>
         </section>
-
-        <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-center">
-            <div className="lg:col-span-2">
-              <h2 className="text-2xl sm:text-3xl font-bold">Join our newsletter</h2>
-              <p className="mt-2 text-slate-600 dark:text-slate-400">Get style tips, drops, and exclusive offers.</p>
-            </div>
-            <form action="/api/newsletter" method="POST" className="flex w-full gap-3">
-              <label htmlFor="email" className="sr-only">Email</label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                required
-                placeholder="you@example.com"
-                className="flex-1 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-fuchsia-500"
-              />
-              <button className="inline-flex items-center rounded-xl bg-fuchsia-600 px-5 py-3 text-sm font-semibold text-white hover:bg-fuchsia-500">
-                Subscribe
-              </button>
-            </form>
-          </div>
-        </section>
       </main>
 
       <footer className="border-t border-slate-200 dark:border-slate-800">
