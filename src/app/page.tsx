@@ -1,6 +1,9 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 import FAQPage from "./FAQPage";
+import { useState } from "react";
 
 export default function Home() {
   const featured = [
@@ -15,6 +18,14 @@ export default function Home() {
     { emoji: "📦", title: "Rent", text: "Pick dates and get it delivered to your door." },
     { emoji: "✨", title: "Return", text: "Wear, wow, and send it back—cleaning included." },
   ];
+
+  const [category, setCategory] = useState("");
+
+  const sizeOptions =
+    category === "shoes"
+      ? ["36", "37", "38", "39", "40", "41", "42", "43", "44"]
+      : ["XS", "S", "M", "L", "XL"];
+
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-slate-50 text-slate-900 dark:from-slate-950 dark:to-slate-900 dark:text-slate-100">
@@ -49,7 +60,7 @@ export default function Home() {
                 Look stunning without the price tag. Flexible rentals, free cleaning, and fast delivery.
               </p>
 
-              <form action="/search" method="GET" className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/60 p-4 shadow-sm">
+              <form action="/search" method="GET" className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6   gap-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/60 p-4 shadow-sm">
                 <div className="col-span-1 lg:col-span-2">
                   <label htmlFor="query" className="sr-only">Search</label>
                   <input
@@ -79,6 +90,21 @@ export default function Home() {
                   />
                 </div>
                 <div>
+                  <select
+                    id="category"
+                    name="category"
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-fuchsia-500"
+                  >
+                    <option value="">Category</option>
+                    <option value="dress">Dress</option>
+                    <option value="jacket">Jacket</option>
+                    <option value="bag">Bag</option>
+                    <option value="shoes">Shoes</option>
+                  </select>
+                </div>
+                <div>
                   <label htmlFor="size" className="sr-only">Size</label>
                   <select
                     id="size"
@@ -86,11 +112,11 @@ export default function Home() {
                     className="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-fuchsia-500"
                   >
                     <option value="">Any size</option>
-                    <option>XS</option>
-                    <option>S</option>
-                    <option>M</option>
-                    <option>L</option>
-                    <option>XL</option>
+                    {sizeOptions.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div className="lg:col-span-5">
