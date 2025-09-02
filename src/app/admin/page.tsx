@@ -27,6 +27,8 @@ export default async function Page() {
         <h1 className="text-2xl font-bold">Admin dashboard</h1>
         <form action="/api/admin/logout" method="POST">
           <button className="text-sm rounded-lg border px-3 py-2">Sign out</button>
+          <Link href="/admin/login">
+          </Link>
         </form>
       </div>
 
