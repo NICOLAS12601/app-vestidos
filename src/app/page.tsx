@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import FAQPage from "./FAQPage";
+import PrivacyPage from "./privacy/page";
 import { useState } from "react";
 
 export default function Home() {
@@ -195,6 +196,8 @@ export default function Home() {
               <FAQPage />
             </div>
         </section>
+        
+
       </main>
 
       <footer className="border-t border-slate-200 dark:border-slate-800">
