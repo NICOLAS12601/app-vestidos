@@ -5,6 +5,7 @@ import ItemCalendar from "./ItemCalendar";
 import {getOrCreateCsrfToken} from "../../../../lib/CsrfSessionManagement";
 import { StaticImport } from "next/dist/shared/lib/get-img-props";
 import { Key } from "react";
+import Link from "next/link";
 
 export default async function ItemDetail({params}: { params: { id: string } }) {
     const id = Number(params.id);
@@ -18,6 +19,9 @@ export default async function ItemDetail({params}: { params: { id: string } }) {
 
     return (
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
+            <Link href="/" className="font-extrabold text-xl tracking-tight mb-10 block">
+              GlamRent
+            </Link>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div>
                     <div className="relative aspect-[3/4] rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800">

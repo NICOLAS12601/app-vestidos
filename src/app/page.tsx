@@ -1,5 +1,10 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import FAQPage from "./FAQPage";
+import PrivacyPage from "./privacy/page";
+import { useState } from "react";
 
 export default function Home() {
   const featured = [
@@ -15,6 +20,14 @@ export default function Home() {
     { emoji: "✨", title: "Return", text: "Wear, wow, and send it back—cleaning included." },
   ];
 
+  const [category, setCategory] = useState("");
+
+  const sizeOptions =
+    category === "shoes"
+      ? ["36", "37", "38", "39", "40", "41", "42", "43", "44"]
+      : ["XS", "S", "M", "L", "XL"];
+
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-slate-50 text-slate-900 dark:from-slate-950 dark:to-slate-900 dark:text-slate-100">
       <header className="sticky top-0 z-30 backdrop-blur bg-white/70 dark:bg-slate-950/60 border-b border-slate-200/60 dark:border-slate-800">
@@ -26,12 +39,11 @@ export default function Home() {
             <Link href="/search" className="hover:text-fuchsia-600">Browse</Link>
             <Link href="#how" className="hover:text-fuchsia-600">How it works</Link>
             <Link href="#featured" className="hover:text-fuchsia-600">Featured</Link>
-            <Link href="/faq" className="hover:text-fuchsia-600">FAQ</Link>
+            <Link href="#faq" className="hover:text-fuchsia-600">FAQ</Link>
           </nav>
           <div className="flex items-center gap-3">
-            <Link href="/admin/login" className="text-sm hover:text-fuchsia-600">Admin</Link>
-            <Link href="/become-a-lender" className="inline-flex items-center rounded-full bg-fuchsia-600 text-white px-4 py-2 text-sm font-medium hover:bg-fuchsia-500">
-              Become a lender
+            <Link href="/admin/login" className="inline-flex items-center rounded-full bg-fuchsia-600 text-white px-4 py-2 text-sm font-medium hover:bg-fuchsia-500">
+              Admin
             </Link>
           </div>
         </div>
@@ -49,7 +61,7 @@ export default function Home() {
                 Look stunning without the price tag. Flexible rentals, free cleaning, and fast delivery.
               </p>
 
-              <form action="/search" method="GET" className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/60 p-4 shadow-sm">
+              <form action="/search" method="GET" className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6   gap-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/60 p-4 shadow-sm">
                 <div className="col-span-1 lg:col-span-2">
                   <label htmlFor="query" className="sr-only">Search</label>
                   <input
@@ -79,6 +91,21 @@ export default function Home() {
                   />
                 </div>
                 <div>
+                  <select
+                    id="category"
+                    name="category"
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-fuchsia-500"
+                  >
+                    <option value="">Category</option>
+                    <option value="dress">Dress</option>
+                    <option value="jacket">Jacket</option>
+                    <option value="bag">Bag</option>
+                    <option value="shoes">Shoes</option>
+                  </select>
+                </div>
+                <div>
                   <label htmlFor="size" className="sr-only">Size</label>
                   <select
                     id="size"
@@ -86,11 +113,11 @@ export default function Home() {
                     className="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-fuchsia-500"
                   >
                     <option value="">Any size</option>
-                    <option>XS</option>
-                    <option>S</option>
-                    <option>M</option>
-                    <option>L</option>
-                    <option>XL</option>
+                    {sizeOptions.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div className="lg:col-span-5">
@@ -98,7 +125,7 @@ export default function Home() {
                     type="submit"
                     className="w-full sm:w-auto inline-flex items-center justify-center rounded-xl bg-fuchsia-600 px-6 py-3 text-sm font-semibold text-white hover:bg-fuchsia-500"
                   >
-                    Search dresses
+                    Search clothes
                   </button>
                 </div>
               </form>
@@ -164,28 +191,13 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-center">
-            <div className="lg:col-span-2">
-              <h2 className="text-2xl sm:text-3xl font-bold">Join our newsletter</h2>
-              <p className="mt-2 text-slate-600 dark:text-slate-400">Get style tips, drops, and exclusive offers.</p>
+        <section id="faq">
+            <div>
+              <FAQPage />
             </div>
-            <form action="/api/newsletter" method="POST" className="flex w-full gap-3">
-              <label htmlFor="email" className="sr-only">Email</label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                required
-                placeholder="you@example.com"
-                className="flex-1 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-fuchsia-500"
-              />
-              <button className="inline-flex items-center rounded-xl bg-fuchsia-600 px-5 py-3 text-sm font-semibold text-white hover:bg-fuchsia-500">
-                Subscribe
-              </button>
-            </form>
-          </div>
         </section>
+        
+
       </main>
 
       <footer className="border-t border-slate-200 dark:border-slate-800">

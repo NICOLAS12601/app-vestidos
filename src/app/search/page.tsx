@@ -24,6 +24,9 @@ export default function Page({ searchParams }: { searchParams: SearchParams }) {
 
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
+      <Link href="/" className="font-extrabold text-xl tracking-tight mb-5 block">
+        GlamRent
+      </Link>
       <h1 className="text-2xl sm:text-3xl font-bold">Browse catalog</h1>
       <form method="GET" className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
         <input name="q" defaultValue={q} placeholder="Search…" className="rounded-xl border px-3 py-2 text-sm" />
