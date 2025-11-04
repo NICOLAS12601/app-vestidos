@@ -37,7 +37,7 @@ export default async function ItemDetail({ params }: { params: { id: string } | 
             <Image src={images[0] as StaticImport} alt={item.alt ?? item.name ?? ""} fill className="object-cover" priority/>
           </div>
           <div className="mt-4 grid grid-cols-3 gap-3">
-            {images.slice(1).map((src: Key | StaticImport | null | undefined, idx) => (
+            {images.slice(1).map((src: Key | StaticImport | null | undefined, idx:number) => (
               <div key={`${idx}-${itemId}`} className="relative aspect-[3/4] rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800">
                 <Image src={src as StaticImport} alt={item.alt ?? item.name ?? ""} fill className="object-cover"/>
               </div>
