@@ -39,6 +39,17 @@ export type Item = {
   raw?: any;
 };
 
+export type ReservaType = {
+  id: number;
+  vestido_id: number;
+  fecha_ini: string;
+  fecha_out: string;
+  customer_name?: string;
+  customer_email?: string;
+  customer_phone?: string;
+  status: string;
+};
+
 let initPromise: Promise<{ sequelize: any; Prenda: any; Reserva: any }> | null = null;
 
 async function ensureInit() {
@@ -118,18 +129,23 @@ export async function listItems(filters?: {
 export async function getItem(id: number | string) {
   const { Prenda } = await ensureInit();
   const item = await Prenda.findByPk(id);
-  if (!item) return null;
+  if (!item) return null; 
   return typeof item.get === "function" ? item.get({ plain: true }) : item;
 }
 
-export async function getItemRentals(itemId: number | string) {
+export async function getItemRentals(itemId: number | string): Promise<ReservaType[]> {
   const { Reserva } = await ensureInit();
   const rows = await Reserva.findAll({
     where: { vestido_id: itemId },
     order: [["fecha_ini", "DESC"]],
   });
-  return rows.map((r: any) => (typeof r.get === "function" ? r.get({ plain: true }) : r));
+
+  return rows.map((r: any) => {
+    const reserva = typeof r.get === "function" ? r.get({ plain: true }) : r;
+    return reserva as ReservaType;
+  });
 }
+
 
 /**
  * Comprueba disponibilidad de un ítem en el rango [fecha_ini, fecha_out] (inclusive).
