@@ -1,25 +1,39 @@
-import {NextResponse} from "next/server";
-import {listItems} from "../../../../lib/RentalManagementSystem";
+import { NextResponse } from "next/server";
+import { Op } from "sequelize";
+import { initDb } from "../../../models";
 
-export function GET(req: Request) {
-  const { searchParams } = new URL(req.url);
-  const q = searchParams.get("q") || undefined;
-  const category = (searchParams.get("category") as any) || undefined;
-  const size = searchParams.get("size") || undefined;
-  const color = searchParams.get("color") || undefined;
-  const style = searchParams.get("style") || undefined;
+export async function GET(req: Request) {
+  try {
+    const { Prenda } = await initDb({ sync: false });
+    const url = new URL(req.url);
 
-  const items = listItems({ q, category, size, color, style }).map((i) => ({
-    id: i.id,
-    name: i.name,
-    category: i.category,
-    pricePerDay: i.pricePerDay,
-    sizes: i.sizes,
-    color: i.color,
-    style: i.style,
-    image: i.images[0],
-    alt: i.alt,
-  }));
+    // Construir filtros
+    const where: any = {};
 
-  return NextResponse.json({ items });
+    const q = url.searchParams.get("q");
+    const estilo = url.searchParams.get("estilo");
+    const color = url.searchParams.get("color");
+    const talle = url.searchParams.get("talle");
+
+    if (q) {
+      where.nombre = { [Op.like]: `%${q}%` };
+    }
+    if (estilo) where.estilo = estilo;
+    if (color) where.color = color;
+    if (talle) where.talle = { [Op.like]: `%${talle}%` };
+
+    // Buscar prendas con los filtros
+    const prendas = await Prenda.findAll({
+      where,
+      order: [["id", "DESC"]]
+    });
+
+    return NextResponse.json(prendas);
+  } catch (err) {
+    console.error("💥 Error en /api/items:", err);
+    return NextResponse.json(
+      { ok: false, error: String(err) },
+      { status: 500 }
+    );
+  }
 }
