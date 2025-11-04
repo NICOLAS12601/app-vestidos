@@ -2,9 +2,9 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import FAQPage from "./FAQPage";
-import PrivacyPage from "./privacy/page";
+import FAQPage from "./faq/FAQPage";
 import { useState } from "react";
+//import PrivacyPage from "./privacy/page";
 
 export default function Home() {
   const featured = [
