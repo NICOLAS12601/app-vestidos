@@ -1,4 +1,3 @@
-// ...existing code...
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import {getItem, getItemRentals} from "../../../../lib/RentalManagementSystem";
@@ -97,4 +96,3 @@ export default async function ItemDetail({ params }: { params: { id: string } | 
     </div>
   );
 }
-// ...existing code...
