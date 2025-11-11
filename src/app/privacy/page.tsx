@@ -1,6 +1,23 @@
+"use client";
+
+import Link from "next/link";
+
 export default function PrivacyPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-12 min-h-screen">
+       <header className="sticky top-0 z-30 backdrop-blur bg-white/70 dark:bg-slate-950/60 border-b border-slate-200/60 dark:border-slate-800">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          <Link href="/" className="font-extrabold text-xl tracking-tight">
+            GlamRent
+          </Link>
+          <nav className="hidden md:flex items-center gap-8 text-sm">
+            <Link href="/search" className="hover:text-fuchsia-600">Browse</Link>
+            <Link href="/terms" className="hover:text-fuchsia-600">Terms</Link>
+            <Link href="/privacy" className="hover:text-fuchsia-600">Privacy</Link>
+            <Link href="/contact" className="hover:text-fuchsia-600">Contact</Link>
+          </nav>
+        </div>
+      </header>
       <h1 className="text-3xl font-bold mb-6">Política de Privacidad</h1>
 
       <section className="space-y-6 text-slate-600 dark:text-slate-400">
@@ -34,6 +51,12 @@ export default function PrivacyPage() {
           <p>Si tienes dudas, escríbenos a <span className="font-medium">contacto@ejemplo.com</span>.</p>
         </div>
       </section>
+       <footer className="border-t border-slate-200 dark:border-slate-800">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10 flex flex-col sm:flex-row items-center justify-between gap-6">
+          <p className="text-sm text-slate-600 dark:text-slate-400">© {new Date().getFullYear()} GlamRent. All rights reserved.</p>
+          
+        </div>
+      </footer>
     </div>
   );
 }

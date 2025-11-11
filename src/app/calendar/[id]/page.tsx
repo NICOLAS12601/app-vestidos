@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import {getItem, getItemRentals} from "../../../../lib/RentalManagementSystem";
-import ItemCalendar from "../../calendar/[id]/ItemCalendar";
+import ItemCalendar from "./ItemCalendar";
 import {getOrCreateCsrfToken} from "../../../../lib/CsrfSessionManagement";
 import { StaticImport } from "next/dist/shared/lib/get-img-props";
 import { Key } from "react";

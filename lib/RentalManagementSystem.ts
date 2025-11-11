@@ -1,136 +1,229 @@
-export type Category = "dress" | "shoes" | "bag" | "jacket";
+// ...existing code...
+/**
+ * Sistema de gestión de alquileres (completo) usando MySQL + Sequelize.
+ * Exporta funciones async:
+ *  - listItems(filters?)
+ *  - getItem(id)
+ *  - getItemRentals(itemId)
+ *  - isItemAvailable(itemId, fecha_ini, fecha_out)
+ *  - createRental(payload)
+ *  - listRentals()
+ *  - cancelRental(reservaId)
+ *
+ * Nota: espera que src/models/index.ts exporte initDb()
+ */
+
+import { Op } from "sequelize";
+import { initDb } from "../src/models";
+
+type CreateRentalPayload = {
+  itemId: number;
+  fecha_ini: string; // 'YYYY-MM-DD'
+  fecha_out: string; // 'YYYY-MM-DD'
+  customer_name?: string;
+  customer_email?: string;
+  customer_phone?: string;
+};
 
 export type Item = {
-  id: number;
+  id: number | null;
   name: string;
-  category: Category;
-  pricePerDay: number;
-  sizes: string[]; // for shoes you can use "36-41"
-  color: string;
+  category?: string;
+  pricePerDay?: number;
+  sizes?: string[];
+  color?: string;
   style?: string;
-  description: string;
+  description?: string;
   images: string[];
-  alt: string;
+  alt?: string;
+  raw?: any;
 };
 
-export type Rental = {
-  id: string;
-  itemId: number;
-  start: string; // ISO date (yyyy-mm-dd)
-  end: string;   // ISO date (yyyy-mm-dd)
-  customer: { name: string; email: string; phone: string };
-  createdAt: string;
-  status: "active" | "canceled";
+export type ReservaType = {
+  id: number;
+  vestido_id: number;
+  fecha_ini: string;
+  fecha_out: string;
+  customer_name?: string;
+  customer_email?: string;
+  customer_phone?: string;
+  status: string;
 };
 
-// In-memory store for demo. Replace with a DB in production.
-const items: Item[] = [
-  {
-    id: 1,
-    name: "Silk Evening Gown",
-    category: "dress",
-    pricePerDay: 79,
-    sizes: ["XS", "S", "M", "L"],
-    color: "champagne",
-    style: "evening",
-    description: "Luxurious silk gown with flattering silhouette.",
-    images: ["/images/dresses/silk-evening-gown.jpg"],
-    alt: "Model wearing a champagne silk evening gown",
-  },
-  {
-    id: 2,
-    name: "Black Tie Dress",
-    category: "dress",
-    pricePerDay: 99,
-    sizes: ["S", "M", "L", "XL"],
-    color: "black",
-    style: "black-tie",
-    description: "Elegant black-tie dress for formal events.",
-    images: ["/images/dresses/black-tie-dress.jpg"],
-    alt: "Elegant black tie dress",
-  },
-  {
-    id: 3,
-    name: "Floral Midi Dress",
-    category: "dress",
-    pricePerDay: 49,
-    sizes: ["XS", "S", "M"],
-    color: "floral",
-    style: "daytime",
-    description: "Bright floral midi for daytime events.",
-    images: ["/images/dresses/floral-midi-dress.jpg"],
-    alt: "Floral midi dress perfect for daytime events",
-  },
-  {
-    id: 4,
-    name: "Velvet Cocktail Dress",
-    category: "dress",
-    pricePerDay: 59,
-    sizes: ["S", "M", "L"],
-    color: "burgundy",
-    style: "cocktail",
-    description: "Rich velvet cocktail dress in deep tones.",
-    images: ["/images/dresses/velvet-cocktail-dress.jpg"],
-    alt: "Velvet cocktail dress in deep tones",
-  },
-];
+let initPromise: Promise<{ sequelize: any; Prenda: any; Reserva: any }> | null = null;
 
-let rentals: Rental[] = [];
+async function ensureInit() {
+  if (!initPromise) {
+    initPromise = initDb({ sync: false });
+  }
+  return await initPromise;
+}
 
-export function listItems(filters?: {
+/**
+ * Obtiene listado de prendas. Acepta filtros opcionales.
+ * Si se llama sin parámetros sigue funcionando (compatibilidad con llamadas previas).
+ */
+export async function listItems(filters?: {
   q?: string;
-  category?: Category;
+  category?: string;
   size?: string;
   color?: string;
   style?: string;
 }) {
-  const q = filters?.q?.toLowerCase().trim();
-  return items.filter((it) => {
-    if (filters?.category && it.category !== filters.category) return false;
-    if (filters?.size && !it.sizes.includes(filters.size)) return false;
-    if (filters?.color && it.color.toLowerCase() !== filters.color.toLowerCase()) return false;
-    if (filters?.style && (it.style ?? "").toLowerCase() !== filters.style.toLowerCase()) return false;
-    if (q) {
-      const hay = [it.name, it.color, it.style ?? "", it.category].join(" ").toLowerCase();
-      if (!hay.includes(q)) return false;
+  const { Prenda } = await ensureInit();
+
+  const where: any = {};
+
+  // búsqueda de texto (best-effort sobre columnas título/descripcion)
+  const q = filters?.q?.toString().trim();
+  if (q) {
+    where[Op.or] = [
+      { titulo: { [Op.like]: `%${q}%` } },
+      { descripcion: { [Op.like]: `%${q}%` } },
+    ];
+  }
+
+  // Filtros adicionales (si las columnas existen)
+  if (filters?.category) where.category = filters.category;
+  if (filters?.size) where.size = filters.size;
+  if (filters?.color) where.color = filters.color;
+  if (filters?.style) where.style = filters.style;
+
+  const rows = await Prenda.findAll({ where, order: [["createdAt", "DESC"]] }).catch(() => []);
+
+  return rows.map((r: any) => {
+    const data = typeof r.get === "function" ? r.get({ plain: true }) : r;
+
+    // Normalizar imágenes: soporta array, JSON string o CSV
+    let images: string[] = [];
+    if (data.images) {
+      images = Array.isArray(data.images) ? data.images : [String(data.images)];
+    } else if (data.fotos) {
+      if (Array.isArray(data.fotos)) images = data.fotos;
+      else if (typeof data.fotos === "string") {
+        try {
+          const parsed = JSON.parse(data.fotos);
+          images = Array.isArray(parsed) ? parsed : [String(parsed)];
+        } catch {
+          images = data.fotos.split(",").map((s: string) => s.trim()).filter(Boolean);
+        }
+      }
     }
-    return true;
+
+    return {
+      id: data.id ?? data.vestido_id ?? null,
+      name: data.name ?? data.titulo ?? data.nombre ?? "Untitled",
+      category: data.category ?? undefined,
+      pricePerDay: data.pricePerDay ?? (data.precio ? Number(data.precio) : undefined),
+      sizes: data.sizes ?? (data.tallas ? (Array.isArray(data.tallas) ? data.tallas : [String(data.tallas)]) : []),
+      color: data.color ?? undefined,
+      style: data.style ?? undefined,
+      description: data.description ?? data.descripcion ?? undefined,
+      images,
+      alt: data.alt ?? data.titulo ?? undefined,
+      raw: data,
+    } as Item;
   });
 }
 
-export function getItem(id: number) {
-  return items.find((i) => i.id === id) ?? null;
+export async function getItem(id: number | string) {
+  const { Prenda } = await ensureInit();
+  const item = await Prenda.findByPk(id);
+  if (!item) return null; 
+  return typeof item.get === "function" ? item.get({ plain: true }) : item;
 }
 
-export function getItemRentals(itemId: number) {
-  return rentals.filter((r) => r.itemId === itemId && r.status === "active");
+export async function getItemRentals(itemId: number | string): Promise<ReservaType[]> {
+  const { Reserva } = await ensureInit();
+  const rows = await Reserva.findAll({
+    where: { vestido_id: itemId },
+    order: [["fecha_ini", "DESC"]],
+  });
+
+  return rows.map((r: any) => {
+    const reserva = typeof r.get === "function" ? r.get({ plain: true }) : r;
+    return reserva as ReservaType;
+  });
 }
 
-export function hasOverlap(aStart: string, aEnd: string, bStart: string, bEnd: string) {
-  return !(aEnd < bStart || bEnd < aStart);
+
+/**
+ * Comprueba disponibilidad de un ítem en el rango [fecha_ini, fecha_out] (inclusive).
+ * Las fechas deben venir en formato 'YYYY-MM-DD'.
+ */
+export async function isItemAvailable(itemId: number | string, fecha_ini: string, fecha_out: string) {
+  const { Reserva } = await ensureInit();
+
+  const overlapping = await Reserva.count({
+    where: {
+      vestido_id: itemId,
+      status: "active",
+      fecha_ini: { [Op.lte]: fecha_out },
+      fecha_out: { [Op.gte]: fecha_ini },
+    },
+  });
+
+  return overlapping === 0;
 }
 
-export function isItemAvailable(itemId: number, start: string, end: string) {
-  const rs = getItemRentals(itemId);
-  return rs.every((r) => !hasOverlap(start, end, r.start, r.end));
+/**
+ * Crea una reserva dentro de una transacción, verificando disponibilidad.
+ */
+export async function createRental(payload: CreateRentalPayload) {
+  const { sequelize, Reserva } = await ensureInit();
+
+  const { itemId, fecha_ini, fecha_out, customer_name, customer_email, customer_phone } = payload;
+
+  if (!itemId || !fecha_ini || !fecha_out) {
+    throw new Error("Parámetros inválidos: itemId, fecha_ini y fecha_out son requeridos.");
+  }
+
+  return await sequelize.transaction(async (tx: any) => {
+    // Re-check availability dentro de la transacción
+    const overlapping = await Reserva.count({
+      where: {
+        vestido_id: itemId,
+        status: "active",
+        fecha_ini: { [Op.lte]: fecha_out },
+        fecha_out: { [Op.gte]: fecha_ini },
+      },
+      transaction: tx,
+      lock: tx.LOCK.UPDATE,
+    });
+
+    if (overlapping > 0) {
+      throw new Error("El ítem no está disponible en las fechas solicitadas.");
+    }
+
+    const nueva = await Reserva.create(
+      {
+        vestido_id: itemId,
+        fecha_ini,
+        fecha_out,
+        customer_name,
+        customer_email,
+        customer_phone,
+        status: "active",
+      },
+      { transaction: tx }
+    );
+
+    return typeof nueva.get === "function" ? nueva.get({ plain: true }) : nueva;
+  });
 }
 
-export function createRental(data: Omit<Rental, "id" | "createdAt" | "status">) {
-  const ok = isItemAvailable(data.itemId, data.start, data.end);
-  if (!ok) return { error: "Item is not available for the selected dates." as const };
-  const id = crypto.randomUUID();
-  const rental: Rental = { ...data, id, createdAt: new Date().toISOString(), status: "active" };
-  rentals.push(rental);
-  return { rental };
+export async function listRentals() {
+  const { Reserva } = await ensureInit();
+  const rows = await Reserva.findAll({ order: [["fecha_ini", "DESC"]] });
+  return rows.map((r: any) => (typeof r.get === "function" ? r.get({ plain: true }) : r));
 }
 
-export function listRentals() {
-  return rentals.slice().sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+export async function cancelRental(reservaId: number | string) {
+  const { Reserva } = await ensureInit();
+  const r = await Reserva.findByPk(reservaId);
+  if (!r) throw new Error("Reserva no encontrada.");
+  r.status = "cancelled";
+  await r.save();
+  return typeof r.get === "function" ? r.get({ plain: true }) : r;
 }
-
-export function cancelRental(id: string) {
-  const r = rentals.find((x) => x.id === id);
-  if (!r) return { error: "Not found" as const };
-  r.status = "canceled";
-  return { ok: true as const };
-}
+// ...existing code...
