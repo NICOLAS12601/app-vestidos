@@ -1,4 +1,3 @@
-// ...existing code...
 /**
  * Sistema de gestión de alquileres (completo) usando MySQL + Sequelize.
  * Exporta funciones async:
@@ -74,53 +73,51 @@ export async function listItems(filters?: {
 
   const where: any = {};
 
-  // búsqueda de texto (best-effort sobre columnas título/descripcion)
+  // búsqueda de texto sobre nombre
   const q = filters?.q?.toString().trim();
   if (q) {
     where[Op.or] = [
-      { titulo: { [Op.like]: `%${q}%` } },
-      { descripcion: { [Op.like]: `%${q}%` } },
+      { nombre: { [Op.like]: `%${q}%` } },
     ];
   }
 
-  // Filtros adicionales (si las columnas existen)
-  if (filters?.category) where.category = filters.category;
-  if (filters?.size) where.size = filters.size;
+  // Filtros adicionales usando los nombres reales de columnas
   if (filters?.color) where.color = filters.color;
-  if (filters?.style) where.style = filters.style;
+  if (filters?.style) where.estilo = filters.style;
+  if (filters?.size) where.talle = { [Op.like]: `%${filters.size}%` };
 
-  const rows = await Prenda.findAll({ where, order: [["createdAt", "DESC"]] }).catch(() => []);
+  const rows = await Prenda.findAll({ where, order: [["id", "DESC"]] }).catch((err) => {
+    console.error("Error en listItems:", err);
+    return [];
+  });
 
   return rows.map((r: any) => {
     const data = typeof r.get === "function" ? r.get({ plain: true }) : r;
 
-    // Normalizar imágenes: soporta array, JSON string o CSV
-    let images: string[] = [];
-    if (data.images) {
-      images = Array.isArray(data.images) ? data.images : [String(data.images)];
-    } else if (data.fotos) {
-      if (Array.isArray(data.fotos)) images = data.fotos;
-      else if (typeof data.fotos === "string") {
-        try {
-          const parsed = JSON.parse(data.fotos);
-          images = Array.isArray(parsed) ? parsed : [String(parsed)];
-        } catch {
-          images = data.fotos.split(",").map((s: string) => s.trim()).filter(Boolean);
-        }
-      }
+    // Mapeo exacto de los campos de la tabla prendas
+    // name: nombre, style: estilo, sizes: talle (CSV), pricePerDay: precio
+    let price = 0;
+    if (typeof data.precio === "number") {
+      price = data.precio;
+    } else if (typeof data.precio === "string") {
+      // Reemplazar , por . y parsear
+      price = parseFloat(data.precio.replace(",", "."));
+      if (isNaN(price)) price = 0;
     }
 
     return {
-      id: data.id ?? data.vestido_id ?? null,
-      name: data.name ?? data.titulo ?? data.nombre ?? "Untitled",
-      category: data.category ?? undefined,
-      pricePerDay: data.pricePerDay ?? (data.precio ? Number(data.precio) : undefined),
-      sizes: data.sizes ?? (data.tallas ? (Array.isArray(data.tallas) ? data.tallas : [String(data.tallas)]) : []),
-      color: data.color ?? undefined,
-      style: data.style ?? undefined,
-      description: data.description ?? data.descripcion ?? undefined,
-      images,
-      alt: data.alt ?? data.titulo ?? undefined,
+      id: data.id ?? null,
+      name: data.nombre ?? "",
+      category: undefined,
+      pricePerDay: price,
+      sizes: typeof data.talle === "string"
+        ? data.talle.split(",").map((s: string) => s.trim()).filter(Boolean)
+        : [],
+      color: data.color ?? "",
+      style: data.estilo ?? "",
+      description: undefined,
+      images: [],
+      alt: data.nombre ?? "",
       raw: data,
     } as Item;
   });
@@ -226,4 +223,3 @@ export async function cancelRental(reservaId: number | string) {
   await r.save();
   return typeof r.get === "function" ? r.get({ plain: true }) : r;
 }
-// ...existing code...

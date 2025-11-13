@@ -2,6 +2,26 @@ import { isAdmin, getOrCreateCsrfToken } from "@/lib/CsrfSessionManagement";
 import { listItems, listRentals } from "@/lib/RentalManagementSystem";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { unstable_noStore as noStore } from "next/cache";
+
+export const dynamic = "force-dynamic";
+
+// Helper: normalizar respuestas de DB/APIs: array directo o envuelto (items/data/results/rows)
+function toArray<T = any>(v: any, keys: string[] = ["items", "data", "results", "rows"]): T[] {
+  if (Array.isArray(v)) return v as T[];
+  for (const k of keys) {
+    const maybe = v?.[k];
+    if (Array.isArray(maybe)) return maybe as T[];
+  }
+  return [];
+}
+
+// Helper: convertir instancias Sequelize a objetos planos
+function toPlain<T = any>(v: any): T {
+  if (v?.get && typeof v.get === "function") return v.get({ plain: true }) as T;
+  if (v?.toJSON && typeof v.toJSON === "function") return v.toJSON() as T;
+  return v as T;
+}
 
 type AdminItem = {
   id: number | string;
@@ -12,11 +32,23 @@ type AdminItem = {
 };
 
 export default async function Page() {
+  noStore();
   if (!isAdmin()) redirect("/admin/login");
   const csrf = await getOrCreateCsrfToken();
 
-  const items = listItems();
-  const rentals = listRentals();
+  // Await a DB (Sequelize retorna Promises)
+  const [itemsRaw, rentalsRaw] = await Promise.all([listItems(), listRentals()]);
+
+  // DEBUG: Ver qué retorna la DB
+  console.log("itemsRaw:", itemsRaw);
+  console.log("rentalsRaw:", rentalsRaw);
+
+  // Normalizar para evitar ".map is not a function"
+  const items = toArray<any>(itemsRaw).map(toPlain);
+  const rentals = toArray<any>(rentalsRaw).map(toPlain);
+
+  console.log("items normalized:", items);
+  console.log("rentals normalized:", rentals);
 
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
@@ -41,21 +73,30 @@ export default async function Page() {
               <tr className="text-left">
                 <th className="py-2 pr-4">ID</th>
                 <th className="py-2 pr-4">Name</th>
-                <th className="py-2 pr-4">Category</th>
+                <th className="py-2 pr-4">Color</th>
+                <th className="py-2 pr-4">Style</th>
                 <th className="py-2 pr-4">Sizes</th>
                 <th className="py-2 pr-4">Price/day</th>
               </tr>
             </thead>
             <tbody>
-            {items.map((i: AdminItem) => (
-                <tr key={i.id} className="border-t">
-                  <td className="py-2 pr-4">{i.id}</td>
-                  <td className="py-2 pr-4">{i.name}</td>
-                  <td className="py-2 pr-4">{i.category}</td>
-                  <td className="py-2 pr-4">{i.sizes.join(", ")}</td>
-                  <td className="py-2 pr-4">${i.pricePerDay}</td>
+            {items.map((i: any) => (
+                <tr key={String(i.id)} className="border-t">
+                  <td className="py-2 pr-4">{String(i.id)}</td>
+                  <td className="py-2 pr-4">{i.name ?? "-"}</td>
+                  <td className="py-2 pr-4">{i.color ?? "-"}</td>
+                  <td className="py-2 pr-4">{i.style ?? "-"}</td>
+                  <td className="py-2 pr-4">
+                    {Array.isArray(i.sizes) ? i.sizes.join(", ") : ""}
+                  </td>
+                  <td className="py-2 pr-4">${Number(i.pricePerDay ?? 0).toFixed(2)}</td>
                 </tr>
               ))}
+            {items.length === 0 && (
+                <tr>
+                  <td className="py-3 text-slate-500" colSpan={6}>No items.</td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -76,25 +117,24 @@ export default async function Page() {
               </tr>
             </thead>
             <tbody>
-              {rentals.map((r) => (
-                <tr key={r.id} className="border-t">
-                  <td className="py-2 pr-4">{r.id.slice(0, 8)}</td>
-                  <td className="py-2 pr-4">{r.itemId}</td>
+              {rentals.map((r: any) => (
+                <tr key={String(r.id ?? r.ID ?? r._id)} className="border-t">
+                  <td className="py-2 pr-4">{String(r.id ?? r.ID ?? r._id).slice(0, 8)}</td>
+                  <td className="py-2 pr-4">{String(r.itemId ?? r.item_id ?? "")}</td>
                   <td className="py-2 pr-4">
-                    {r.start} → {r.end}
+                    {(r.start ?? r.start_date) ?? ""} → {(r.end ?? r.end_date) ?? ""}
                   </td>
                   <td className="py-2 pr-4">
-                    {r.customer.name}
-                    <div className="text-slate-500 text-xs">{r.customer.email} • {r.customer.phone}</div>
+                    {(r.customer?.name ?? r.customer_name) ?? "-"}
+                    <div className="text-slate-500 text-xs">
+                      {(r.customer?.email ?? r.customer_email) ?? ""} • {(r.customer?.phone ?? r.customer_phone) ?? ""}
+                    </div>
                   </td>
-                  <td className="py-2 pr-4 capitalize">{r.status}</td>
+                  <td className="py-2 pr-4 capitalize">{r.status ?? r.state ?? "-"}</td>
                   <td className="py-2 pr-4">
-                    {r.status === "active" ? (
+                    {(r.status ?? r.state) === "active" ? (
                       <form
-                        onSubmit={async (e) => {
-                          // no-op on server; keep for semantics
-                        }}
-                        action={`/api/admin/rentals/${r.id}/cancel`}
+                        action={`/api/admin/rentals/${String(r.id ?? r.ID ?? r._id)}/cancel`}
                         method="POST"
                       >
                         <input type="hidden" name="csrf" value={csrf} />
