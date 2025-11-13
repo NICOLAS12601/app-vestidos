@@ -86,7 +86,8 @@ export async function listItems(filters?: {
   if (filters?.style) where.estilo = filters.style;
   if (filters?.size) where.talle = { [Op.like]: `%${filters.size}%` };
 
-  const rows = await Prenda.findAll({ where, order: [["id", "DESC"]] }).catch((err) => {
+  // Antes: order: [["id", "DESC"]]
+  const rows = await Prenda.findAll({ where, order: [["id", "ASC"]] }).catch((err) => {
     console.error("Error en listItems:", err);
     return [];
   });
@@ -210,9 +211,27 @@ export async function createRental(payload: CreateRentalPayload) {
 }
 
 export async function listRentals() {
-  const { Reserva } = await ensureInit();
-  const rows = await Reserva.findAll({ order: [["fecha_ini", "DESC"]] });
-  return rows.map((r: any) => (typeof r.get === "function" ? r.get({ plain: true }) : r));
+  const { sequelize, Reserva } = await ensureInit();
+  try {
+    const rows = await Reserva.findAll({ order: [["id", "ASC"]] });
+    return rows.map((r: any) => (typeof r.get === "function" ? r.get({ plain: true }) : r));
+  } catch (err) {
+    console.error("listRentals: fallback to raw query due to model/columns mismatch:", err);
+    const [rows] = await sequelize.query(`
+      SELECT
+        id,
+        vestido_id,
+        fecha_ini,
+        fecha_out,
+        customer_name,
+        customer_email,
+        customer_phone,
+        status
+      FROM reservas
+      ORDER BY fecha_ini DESC
+    `);
+    return Array.isArray(rows) ? rows : [];
+  }
 }
 
 export async function cancelRental(reservaId: number | string) {
@@ -220,6 +239,96 @@ export async function cancelRental(reservaId: number | string) {
   const r = await Reserva.findByPk(reservaId);
   if (!r) throw new Error("Reserva no encontrada.");
   r.status = "cancelled";
+  await r.save();
+  return typeof r.get === "function" ? r.get({ plain: true }) : r;
+}
+
+// Crear prenda
+export async function createItem(payload: {
+  nombre: string;
+  color?: string;
+  estilo?: string;
+  talle?: string; // CSV: "XS,S,M"
+  precio: number | string;
+}) {
+  const { Prenda } = await ensureInit();
+  const precio =
+    typeof payload.precio === "number"
+      ? payload.precio
+      : (() => {
+          const p = parseFloat(String(payload.precio).replace(",", "."));
+          return isNaN(p) ? 0 : p;
+        })();
+
+  const created = await Prenda.create({
+    nombre: payload.nombre,
+    color: payload.color ?? null,
+    estilo: payload.estilo ?? null,
+    talle: payload.talle ?? null,
+    precio,
+  });
+
+  return typeof created.get === "function" ? created.get({ plain: true }) : created;
+}
+
+// Actualizar prenda
+export async function updateItem(
+  id: number | string,
+  changes: Partial<{ nombre: string; color: string; estilo: string; talle: string; precio: number | string }>
+) {
+  const { Prenda } = await ensureInit();
+  const item = await Prenda.findByPk(id);
+  if (!item) throw new Error("Prenda no encontrada.");
+
+  if (typeof changes.nombre !== "undefined") item.nombre = changes.nombre;
+  if (typeof changes.color !== "undefined") item.color = changes.color;
+  if (typeof changes.estilo !== "undefined") item.estilo = changes.estilo;
+  if (typeof changes.talle !== "undefined") item.talle = changes.talle;
+  if (typeof changes.precio !== "undefined") {
+    const precio =
+      typeof changes.precio === "number"
+        ? changes.precio
+        : (() => {
+            const p = parseFloat(String(changes.precio).replace(",", "."));
+            return isNaN(p) ? 0 : p;
+          })();
+    item.precio = precio;
+  }
+
+  await item.save();
+  return typeof item.get === "function" ? item.get({ plain: true }) : item;
+}
+
+// Eliminar prenda
+export async function deleteItem(id: number | string) {
+  const { Prenda } = await ensureInit();
+  await Prenda.destroy({ where: { id } });
+  return true;
+}
+
+// Actualizar reserva
+export async function updateRental(
+  reservaId: number | string,
+  changes: Partial<{
+    fecha_ini: string;
+    fecha_out: string;
+    status: string;
+    customer_name: string;
+    customer_email: string;
+    customer_phone: string;
+  }>
+) {
+  const { Reserva } = await ensureInit();
+  const r = await Reserva.findByPk(reservaId);
+  if (!r) throw new Error("Reserva no encontrada.");
+
+  if (typeof changes.fecha_ini !== "undefined") r.fecha_ini = changes.fecha_ini;
+  if (typeof changes.fecha_out !== "undefined") r.fecha_out = changes.fecha_out;
+  if (typeof changes.status !== "undefined") r.status = changes.status;
+  if (typeof changes.customer_name !== "undefined") r.customer_name = changes.customer_name;
+  if (typeof changes.customer_email !== "undefined") r.customer_email = changes.customer_email;
+  if (typeof changes.customer_phone !== "undefined") r.customer_phone = changes.customer_phone;
+
   await r.save();
   return typeof r.get === "function" ? r.get({ plain: true }) : r;
 }
