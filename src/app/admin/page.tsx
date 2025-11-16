@@ -155,7 +155,7 @@ export default async function Page({ searchParams }: { searchParams?: { editItem
             </div>
             <div>
               <label className="block text-xs font-semibold mb-1">Estilo</label>
-              <input name="estilo" className="border rounded px-2 py-1" placeholder="Vestido, Chaqueta, etc." />
+              <input name="estilo" className="border rounded px-2 py-1" placeholder="Formal, casual, etc." />
             </div>
             <div>
               <label className="block text-xs font-semibold mb-1">Talles (CSV)</label>
