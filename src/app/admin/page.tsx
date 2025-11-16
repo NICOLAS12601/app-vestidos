@@ -8,6 +8,7 @@ import {
   updateRental,
   getItem,
   cancelRental,
+  approveRental, // <-- agregar
 } from "@/lib/RentalManagementSystem";
 import { redirect } from "next/navigation";
 import Link from "next/link";
@@ -91,6 +92,14 @@ async function cancelRentalAction(formData: FormData) {
   const id = String(formData.get("rid") ?? "");
   if (!id) return;
   await cancelRental(id);
+  revalidatePath("/admin");
+}
+
+async function approveRentalAction(formData: FormData) {
+  "use server";
+  const id = String(formData.get("rid") ?? "");
+  if (!id) return;
+  await approveRental(id);
   revalidatePath("/admin");
 }
 
@@ -268,14 +277,27 @@ export default async function Page({ searchParams }: { searchParams?: { editItem
                   </td>
                   <td className="py-2 pr-4 capitalize">{r.status ?? r.state ?? "-"}</td>
                   <td className="py-2 pr-4">
-                    {(r.status ?? r.state) === "active" ? (
-                      <form action={cancelRentalAction} method="POST" className="relative z-10 inline">
-                        <input type="hidden" name="rid" value={String(r.id ?? r.ID ?? r._id)} />
-                        <button className="rounded-lg border px-3 py-1 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer">Cancel</button>
-                      </form>
-                    ) : (
-                      <span className="text-slate-400 relative z-10">—</span>
-                    )}
+                    <div className="relative z-10 flex gap-2">
+                      {(r.status ?? r.state) === "pending" && (
+                        <>
+                          <form action={approveRentalAction} method="POST" className="inline">
+                            <input type="hidden" name="rid" value={String(r.id ?? r.ID ?? r._id)} />
+                            <button className="rounded-lg border px-3 py-1 bg-green-50 text-green-700 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-300 dark:hover:bg-green-900/50 cursor-pointer">
+                              Approve
+                            </button>
+                          </form>
+                          <form action={cancelRentalAction} method="POST" className="inline">
+                            <input type="hidden" name="rid" value={String(r.id ?? r.ID ?? r._id)} />
+                            <button className="rounded-lg border px-3 py-1 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer">
+                              Cancel
+                            </button>
+                          </form>
+                        </>
+                      )}
+                      {(r.status ?? r.state) !== "pending" && (
+                        <span className="text-slate-400">—</span>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -301,8 +323,9 @@ export default async function Page({ searchParams }: { searchParams?: { editItem
                 <input name="fecha_out" defaultValue={String(rentalForEdit.fecha_out ?? rentalForEdit.end ?? "")} className="mt-1 w-full border rounded px-2 py-1" />
               </label>
               <label className="text-xs font-semibold">Estado
-                <select name="status" defaultValue={String(rentalForEdit.status ?? "active")} className="mt-1 w-full border rounded px-2 py-1">
-                  <option value="active">active</option>
+                <select name="status" defaultValue={String(rentalForEdit.status ?? "pending")} className="mt-1 w-full border rounded px-2 py-1">
+                  <option value="pending">pending</option>
+                  <option value="approved">approved</option>
                   <option value="cancelled">cancelled</option>
                 </select>
               </label>

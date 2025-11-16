@@ -174,7 +174,7 @@ export async function isItemAvailable(itemId: number | string, fecha_ini: string
   const overlapping = await Reserva.count({
     where: {
       vestido_id: itemId,
-      status: "active",
+      status: "pending",
       fecha_ini: { [Op.lte]: fecha_out },
       fecha_out: { [Op.gte]: fecha_ini },
     },
@@ -200,7 +200,7 @@ export async function createRental(payload: CreateRentalPayload) {
     const overlapping = await Reserva.count({
       where: {
         vestido_id: itemId,
-        status: "active",
+        status: "pending",
         fecha_ini: { [Op.lte]: fecha_out },
         fecha_out: { [Op.gte]: fecha_ini },
       },
@@ -220,7 +220,7 @@ export async function createRental(payload: CreateRentalPayload) {
         customer_name,
         customer_email,
         customer_phone,
-        status: "active",
+        status: "pending",
       },
       { transaction: tx }
     );
@@ -258,6 +258,16 @@ export async function cancelRental(reservaId: number | string) {
   const r = await Reserva.findByPk(reservaId);
   if (!r) throw new Error("Reserva no encontrada.");
   r.status = "cancelled";
+  await r.save();
+  return typeof r.get === "function" ? r.get({ plain: true }) : r;
+}
+
+// Aprobar reserva
+export async function approveRental(reservaId: number | string) {
+  const { Reserva } = await ensureInit();
+  const r = await Reserva.findByPk(reservaId);
+  if (!r) throw new Error("Reserva no encontrada.");
+  r.status = "approved";
   await r.save();
   return typeof r.get === "function" ? r.get({ plain: true }) : r;
 }

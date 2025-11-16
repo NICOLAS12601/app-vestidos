@@ -40,7 +40,7 @@ export function initModel(sequelize: Sequelize) {
       customer_name: { type: DataTypes.STRING(255), allowNull: true },
       customer_email: { type: DataTypes.STRING(255), allowNull: true },
       customer_phone: { type: DataTypes.STRING(50), allowNull: true },
-      status: { type: DataTypes.STRING(50), allowNull: false, defaultValue: "active" },
+      status: { type: DataTypes.STRING(50), allowNull: false, defaultValue: "pending" },
     },
     {
       sequelize,
