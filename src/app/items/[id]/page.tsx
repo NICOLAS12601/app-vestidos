@@ -3,8 +3,6 @@ import { notFound } from "next/navigation";
 import {getItem, getItemRentals} from "../../../../lib/RentalManagementSystem";
 import ItemCalendar from "../../calendar/[id]/ItemCalendar";
 import {getOrCreateCsrfToken} from "../../../../lib/CsrfSessionManagement";
-import { StaticImport } from "next/dist/shared/lib/get-img-props";
-import { Key } from "react";
 import Link from "next/link";
 
 export default async function ItemDetail({ params }: { params: { id: string } | Promise<{ id: string }> }) {
@@ -33,12 +31,12 @@ export default async function ItemDetail({ params }: { params: { id: string } | 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div>
           <div className="relative aspect-[3/4] rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800">
-            <Image src={images[0] as StaticImport} alt={item.alt ?? item.name ?? ""} fill className="object-cover" priority/>
+            <Image src={images[0]} alt={item.alt ?? item.name ?? ""} fill className="object-cover" priority/>
           </div>
           <div className="mt-4 grid grid-cols-3 gap-3">
-            {images.slice(1).map((src: Key | StaticImport | null | undefined, idx:number) => (
+            {images.slice(1).map((src: string, idx:number) => (
               <div key={`${idx}-${itemId}`} className="relative aspect-[3/4] rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800">
-                <Image src={src as StaticImport} alt={item.alt ?? item.name ?? ""} fill className="object-cover"/>
+                <Image src={src} alt={item.alt ?? item.name ?? ""} fill className="object-cover"/>
               </div>
             ))}
           </div>
@@ -46,8 +44,6 @@ export default async function ItemDetail({ params }: { params: { id: string } | 
 
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold">{item.name}</h1>
-          <p className="mt-1 text-slate-600 dark:text-slate-400 capitalize">{item.category}</p>
-          <p className="mt-4">{item.description}</p>
           <p className="mt-4 font-semibold">From ${item.pricePerDay}/day</p>
           <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">Sizes: {(item.sizes || []).join(", ")}</p>
           <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">Color: {item.color}{item.style ? ` • Style: ${item.style}` : ""}</p>
@@ -89,7 +85,6 @@ export default async function ItemDetail({ params }: { params: { id: string } | 
                 </button>
               </div>
             </form>
-            <p className="mt-2 text-xs text-slate-500">No account required. We’ll confirm availability via email.</p>
           </div>
         </div>
       </div>

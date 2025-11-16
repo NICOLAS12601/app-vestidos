@@ -27,12 +27,10 @@ type CreateRentalPayload = {
 export type Item = {
   id: number | null;
   name: string;
-  category?: string;
   pricePerDay?: number;
   sizes?: string[];
   color?: string;
   style?: string;
-  description?: string;
   images: string[];
   alt?: string;
   raw?: any;
@@ -86,22 +84,21 @@ export async function listItems(filters?: {
   if (filters?.style) where.estilo = filters.style;
   if (filters?.size) where.talle = { [Op.like]: `%${filters.size}%` };
 
-  // Antes: order: [["id", "DESC"]]
-  const rows = await Prenda.findAll({ where, order: [["id", "ASC"]] }).catch((err) => {
+  let rows: any[];
+  try {
+    rows = await Prenda.findAll({ where, order: [["id", "ASC"]] });
+  } catch (err) {
     console.error("Error en listItems:", err);
-    return [];
-  });
+    rows = [];
+  }
 
   return rows.map((r: any) => {
     const data = typeof r.get === "function" ? r.get({ plain: true }) : r;
 
-    // Mapeo exacto de los campos de la tabla prendas
-    // name: nombre, style: estilo, sizes: talle (CSV), pricePerDay: precio
     let price = 0;
     if (typeof data.precio === "number") {
       price = data.precio;
     } else if (typeof data.precio === "string") {
-      // Reemplazar , por . y parsear
       price = parseFloat(data.precio.replace(",", "."));
       if (isNaN(price)) price = 0;
     }
@@ -109,14 +106,12 @@ export async function listItems(filters?: {
     return {
       id: data.id ?? null,
       name: data.nombre ?? "",
-      category: undefined,
       pricePerDay: price,
       sizes: typeof data.talle === "string"
         ? data.talle.split(",").map((s: string) => s.trim()).filter(Boolean)
         : [],
       color: data.color ?? "",
       style: data.estilo ?? "",
-      description: undefined,
       images: [],
       alt: data.nombre ?? "",
       raw: data,
@@ -127,8 +122,32 @@ export async function listItems(filters?: {
 export async function getItem(id: number | string) {
   const { Prenda } = await ensureInit();
   const item = await Prenda.findByPk(id);
-  if (!item) return null; 
-  return typeof item.get === "function" ? item.get({ plain: true }) : item;
+  if (!item) return null;
+  
+  const data = typeof item.get === "function" ? item.get({ plain: true }) : item;
+
+  // Normalizar igual que en listItems
+  let price = 0;
+  if (typeof data.precio === "number") {
+    price = data.precio;
+  } else if (typeof data.precio === "string") {
+    price = parseFloat(data.precio.replace(",", "."));
+    if (isNaN(price)) price = 0;
+  }
+
+  return {
+    id: data.id ?? null,
+    name: data.nombre ?? "",
+    pricePerDay: price,
+    sizes: typeof data.talle === "string"
+      ? data.talle.split(",").map((s: string) => s.trim()).filter(Boolean)
+      : [],
+    color: data.color ?? "",
+    style: data.estilo ?? "",
+    images: [],
+    alt: data.nombre ?? "",
+    raw: data,
+  } as Item;
 }
 
 export async function getItemRentals(itemId: number | string): Promise<ReservaType[]> {
@@ -213,7 +232,7 @@ export async function createRental(payload: CreateRentalPayload) {
 export async function listRentals() {
   const { sequelize, Reserva } = await ensureInit();
   try {
-    const rows = await Reserva.findAll({ order: [["id", "ASC"]] });
+    const rows = await Reserva.findAll({ order: [["fecha_ini", "DESC"]] });
     return rows.map((r: any) => (typeof r.get === "function" ? r.get({ plain: true }) : r));
   } catch (err) {
     console.error("listRentals: fallback to raw query due to model/columns mismatch:", err);

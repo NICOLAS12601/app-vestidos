@@ -7,6 +7,7 @@ import {
   deleteItem,
   updateRental,
   getItem,
+  cancelRental,
 } from "@/lib/RentalManagementSystem";
 import { redirect } from "next/navigation";
 import Link from "next/link";
@@ -83,6 +84,13 @@ async function updateRentalAction(formData: FormData) {
     customer_email: String(formData.get("customer_email") ?? ""),
     customer_phone: String(formData.get("customer_phone") ?? ""),
   });
+  revalidatePath("/admin");
+}
+async function cancelRentalAction(formData: FormData) {
+  "use server";
+  const id = String(formData.get("rid") ?? "");
+  if (!id) return;
+  await cancelRental(id);
   revalidatePath("/admin");
 }
 
@@ -204,19 +212,19 @@ export default async function Page({ searchParams }: { searchParams?: { editItem
             <form action={updateItemAction} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <input type="hidden" name="id" value={String(itemForEdit.id)} />
               <label className="text-xs font-semibold">Nombre
-                <input name="nombre" defaultValue={itemForEdit.nombre ?? ""} className="mt-1 w-full border rounded px-2 py-1" />
+                <input name="nombre" defaultValue={itemForEdit.raw?.nombre ?? itemForEdit.name ?? ""} className="mt-1 w-full border rounded px-2 py-1" />
               </label>
               <label className="text-xs font-semibold">Color
-                <input name="color" defaultValue={itemForEdit.color ?? ""} className="mt-1 w-full border rounded px-2 py-1" />
+                <input name="color" defaultValue={itemForEdit.raw?.color ?? itemForEdit.color ?? ""} className="mt-1 w-full border rounded px-2 py-1" />
               </label>
               <label className="text-xs font-semibold">Estilo
-                <input name="estilo" defaultValue={itemForEdit.estilo ?? ""} className="mt-1 w-full border rounded px-2 py-1" />
+                <input name="estilo" defaultValue={itemForEdit.raw?.estilo ?? itemForEdit.style ?? ""} className="mt-1 w-full border rounded px-2 py-1" />
               </label>
               <label className="text-xs font-semibold">Talles (CSV)
-                <input name="talle" defaultValue={itemForEdit.talle ?? ""} className="mt-1 w-full border rounded px-2 py-1" />
+                <input name="talle" defaultValue={itemForEdit.raw?.talle ?? (Array.isArray(itemForEdit.sizes) ? itemForEdit.sizes.join(",") : "")} className="mt-1 w-full border rounded px-2 py-1" />
               </label>
               <label className="text-xs font-semibold">Precio por día
-                <input name="precio" type="number" step="0.01" min="0" defaultValue={String(itemForEdit.precio ?? "0")} className="mt-1 w-full border rounded px-2 py-1" />
+                <input name="precio" type="number" step="0.01" min="0" defaultValue={String(itemForEdit.raw?.precio ?? itemForEdit.pricePerDay ?? "0")} className="mt-1 w-full border rounded px-2 py-1" />
               </label>
               <div className="col-span-full flex gap-2 mt-2">
                 <button className="bg-blue-600 text-white px-3 py-2 rounded hover:bg-blue-700 cursor-pointer">Save</button>
@@ -261,8 +269,8 @@ export default async function Page({ searchParams }: { searchParams?: { editItem
                   <td className="py-2 pr-4 capitalize">{r.status ?? r.state ?? "-"}</td>
                   <td className="py-2 pr-4">
                     {(r.status ?? r.state) === "active" ? (
-                      <form action={`/api/admin/rentals/${String(r.id ?? r.ID ?? r._id)}/cancel`} method="POST" className="relative z-10 inline">
-                        <input type="hidden" name="csrf" value={csrf} />
+                      <form action={cancelRentalAction} method="POST" className="relative z-10 inline">
+                        <input type="hidden" name="rid" value={String(r.id ?? r.ID ?? r._id)} />
                         <button className="rounded-lg border px-3 py-1 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer">Cancel</button>
                       </form>
                     ) : (
