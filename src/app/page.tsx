@@ -22,10 +22,7 @@ export default function Home() {
 
   const [category, setCategory] = useState("");
 
-  const sizeOptions =
-    category === "shoes"
-      ? ["36", "37", "38", "39", "40", "41", "42", "43", "44"]
-      : ["XS", "S", "M", "L", "XL"];
+  const sizeOptions = ["XS", "S", "M", "L", "XL"];
 
 
   return (
@@ -101,8 +98,6 @@ export default function Home() {
                     <option value="">Category</option>
                     <option value="dress">Dress</option>
                     <option value="jacket">Jacket</option>
-                    <option value="bag">Bag</option>
-                    <option value="shoes">Shoes</option>
                   </select>
                 </div>
                 <div>

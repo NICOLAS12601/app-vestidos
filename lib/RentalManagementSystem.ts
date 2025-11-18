@@ -1,4 +1,3 @@
-// ...existing code...
 /**
  * Sistema de gestión de alquileres (completo) usando MySQL + Sequelize.
  * Exporta funciones async:
@@ -28,12 +27,10 @@ type CreateRentalPayload = {
 export type Item = {
   id: number | null;
   name: string;
-  category?: string;
   pricePerDay?: number;
   sizes?: string[];
   color?: string;
   style?: string;
-  description?: string;
   images: string[];
   alt?: string;
   raw?: any;
@@ -74,53 +71,49 @@ export async function listItems(filters?: {
 
   const where: any = {};
 
-  // búsqueda de texto (best-effort sobre columnas título/descripcion)
+  // búsqueda de texto sobre nombre
   const q = filters?.q?.toString().trim();
   if (q) {
     where[Op.or] = [
-      { titulo: { [Op.like]: `%${q}%` } },
-      { descripcion: { [Op.like]: `%${q}%` } },
+      { nombre: { [Op.like]: `%${q}%` } },
     ];
   }
 
-  // Filtros adicionales (si las columnas existen)
-  if (filters?.category) where.category = filters.category;
-  if (filters?.size) where.size = filters.size;
+  // Filtros adicionales usando los nombres reales de columnas
   if (filters?.color) where.color = filters.color;
-  if (filters?.style) where.style = filters.style;
+  if (filters?.style) where.estilo = filters.style;
+  if (filters?.size) where.talle = { [Op.like]: `%${filters.size}%` };
 
-  const rows = await Prenda.findAll({ where, order: [["createdAt", "DESC"]] }).catch(() => []);
+  let rows: any[];
+  try {
+    rows = await Prenda.findAll({ where, order: [["id", "ASC"]] });
+  } catch (err) {
+    console.error("Error en listItems:", err);
+    rows = [];
+  }
 
   return rows.map((r: any) => {
     const data = typeof r.get === "function" ? r.get({ plain: true }) : r;
 
-    // Normalizar imágenes: soporta array, JSON string o CSV
-    let images: string[] = [];
-    if (data.images) {
-      images = Array.isArray(data.images) ? data.images : [String(data.images)];
-    } else if (data.fotos) {
-      if (Array.isArray(data.fotos)) images = data.fotos;
-      else if (typeof data.fotos === "string") {
-        try {
-          const parsed = JSON.parse(data.fotos);
-          images = Array.isArray(parsed) ? parsed : [String(parsed)];
-        } catch {
-          images = data.fotos.split(",").map((s: string) => s.trim()).filter(Boolean);
-        }
-      }
+    let price = 0;
+    if (typeof data.precio === "number") {
+      price = data.precio;
+    } else if (typeof data.precio === "string") {
+      price = parseFloat(data.precio.replace(",", "."));
+      if (isNaN(price)) price = 0;
     }
 
     return {
-      id: data.id ?? data.vestido_id ?? null,
-      name: data.name ?? data.titulo ?? data.nombre ?? "Untitled",
-      category: data.category ?? undefined,
-      pricePerDay: data.pricePerDay ?? (data.precio ? Number(data.precio) : undefined),
-      sizes: data.sizes ?? (data.tallas ? (Array.isArray(data.tallas) ? data.tallas : [String(data.tallas)]) : []),
-      color: data.color ?? undefined,
-      style: data.style ?? undefined,
-      description: data.description ?? data.descripcion ?? undefined,
-      images,
-      alt: data.alt ?? data.titulo ?? undefined,
+      id: data.id ?? null,
+      name: data.nombre ?? "",
+      pricePerDay: price,
+      sizes: typeof data.talle === "string"
+        ? data.talle.split(",").map((s: string) => s.trim()).filter(Boolean)
+        : [],
+      color: data.color ?? "",
+      style: data.estilo ?? "",
+      images: [],
+      alt: data.nombre ?? "",
       raw: data,
     } as Item;
   });
@@ -129,8 +122,32 @@ export async function listItems(filters?: {
 export async function getItem(id: number | string) {
   const { Prenda } = await ensureInit();
   const item = await Prenda.findByPk(id);
-  if (!item) return null; 
-  return typeof item.get === "function" ? item.get({ plain: true }) : item;
+  if (!item) return null;
+  
+  const data = typeof item.get === "function" ? item.get({ plain: true }) : item;
+
+  // Normalizar igual que en listItems
+  let price = 0;
+  if (typeof data.precio === "number") {
+    price = data.precio;
+  } else if (typeof data.precio === "string") {
+    price = parseFloat(data.precio.replace(",", "."));
+    if (isNaN(price)) price = 0;
+  }
+
+  return {
+    id: data.id ?? null,
+    name: data.nombre ?? "",
+    pricePerDay: price,
+    sizes: typeof data.talle === "string"
+      ? data.talle.split(",").map((s: string) => s.trim()).filter(Boolean)
+      : [],
+    color: data.color ?? "",
+    style: data.estilo ?? "",
+    images: [],
+    alt: data.nombre ?? "",
+    raw: data,
+  } as Item;
 }
 
 export async function getItemRentals(itemId: number | string): Promise<ReservaType[]> {
@@ -157,7 +174,7 @@ export async function isItemAvailable(itemId: number | string, fecha_ini: string
   const overlapping = await Reserva.count({
     where: {
       vestido_id: itemId,
-      status: "active",
+      status: "pending",
       fecha_ini: { [Op.lte]: fecha_out },
       fecha_out: { [Op.gte]: fecha_ini },
     },
@@ -183,7 +200,7 @@ export async function createRental(payload: CreateRentalPayload) {
     const overlapping = await Reserva.count({
       where: {
         vestido_id: itemId,
-        status: "active",
+        status: "pending",
         fecha_ini: { [Op.lte]: fecha_out },
         fecha_out: { [Op.gte]: fecha_ini },
       },
@@ -203,7 +220,7 @@ export async function createRental(payload: CreateRentalPayload) {
         customer_name,
         customer_email,
         customer_phone,
-        status: "active",
+        status: "pending",
       },
       { transaction: tx }
     );
@@ -213,9 +230,27 @@ export async function createRental(payload: CreateRentalPayload) {
 }
 
 export async function listRentals() {
-  const { Reserva } = await ensureInit();
-  const rows = await Reserva.findAll({ order: [["fecha_ini", "DESC"]] });
-  return rows.map((r: any) => (typeof r.get === "function" ? r.get({ plain: true }) : r));
+  const { sequelize, Reserva } = await ensureInit();
+  try {
+    const rows = await Reserva.findAll({ order: [["fecha_ini", "DESC"]] });
+    return rows.map((r: any) => (typeof r.get === "function" ? r.get({ plain: true }) : r));
+  } catch (err) {
+    console.error("listRentals: fallback to raw query due to model/columns mismatch:", err);
+    const [rows] = await sequelize.query(`
+      SELECT
+        id,
+        vestido_id,
+        fecha_ini,
+        fecha_out,
+        customer_name,
+        customer_email,
+        customer_phone,
+        status
+      FROM reservas
+      ORDER BY fecha_ini DESC
+    `);
+    return Array.isArray(rows) ? rows : [];
+  }
 }
 
 export async function cancelRental(reservaId: number | string) {
@@ -226,4 +261,103 @@ export async function cancelRental(reservaId: number | string) {
   await r.save();
   return typeof r.get === "function" ? r.get({ plain: true }) : r;
 }
-// ...existing code...
+
+// Aprobar reserva
+export async function approveRental(reservaId: number | string) {
+  const { Reserva } = await ensureInit();
+  const r = await Reserva.findByPk(reservaId);
+  if (!r) throw new Error("Reserva no encontrada.");
+  r.status = "approved";
+  await r.save();
+  return typeof r.get === "function" ? r.get({ plain: true }) : r;
+}
+
+// Crear prenda
+export async function createItem(payload: {
+  nombre: string;
+  color?: string;
+  estilo?: string;
+  talle?: string; // CSV: "XS,S,M"
+  precio: number | string;
+}) {
+  const { Prenda } = await ensureInit();
+  const precio =
+    typeof payload.precio === "number"
+      ? payload.precio
+      : (() => {
+          const p = parseFloat(String(payload.precio).replace(",", "."));
+          return isNaN(p) ? 0 : p;
+        })();
+
+  const created = await Prenda.create({
+    nombre: payload.nombre,
+    color: payload.color ?? null,
+    estilo: payload.estilo ?? null,
+    talle: payload.talle ?? null,
+    precio,
+  });
+
+  return typeof created.get === "function" ? created.get({ plain: true }) : created;
+}
+
+// Actualizar prenda
+export async function updateItem(
+  id: number | string,
+  changes: Partial<{ nombre: string; color: string; estilo: string; talle: string; precio: number | string }>
+) {
+  const { Prenda } = await ensureInit();
+  const item = await Prenda.findByPk(id);
+  if (!item) throw new Error("Prenda no encontrada.");
+
+  if (typeof changes.nombre !== "undefined") item.nombre = changes.nombre;
+  if (typeof changes.color !== "undefined") item.color = changes.color;
+  if (typeof changes.estilo !== "undefined") item.estilo = changes.estilo;
+  if (typeof changes.talle !== "undefined") item.talle = changes.talle;
+  if (typeof changes.precio !== "undefined") {
+    const precio =
+      typeof changes.precio === "number"
+        ? changes.precio
+        : (() => {
+            const p = parseFloat(String(changes.precio).replace(",", "."));
+            return isNaN(p) ? 0 : p;
+          })();
+    item.precio = precio;
+  }
+
+  await item.save();
+  return typeof item.get === "function" ? item.get({ plain: true }) : item;
+}
+
+// Eliminar prenda
+export async function deleteItem(id: number | string) {
+  const { Prenda } = await ensureInit();
+  await Prenda.destroy({ where: { id } });
+  return true;
+}
+
+// Actualizar reserva
+export async function updateRental(
+  reservaId: number | string,
+  changes: Partial<{
+    fecha_ini: string;
+    fecha_out: string;
+    status: string;
+    customer_name: string;
+    customer_email: string;
+    customer_phone: string;
+  }>
+) {
+  const { Reserva } = await ensureInit();
+  const r = await Reserva.findByPk(reservaId);
+  if (!r) throw new Error("Reserva no encontrada.");
+
+  if (typeof changes.fecha_ini !== "undefined") r.fecha_ini = changes.fecha_ini;
+  if (typeof changes.fecha_out !== "undefined") r.fecha_out = changes.fecha_out;
+  if (typeof changes.status !== "undefined") r.status = changes.status;
+  if (typeof changes.customer_name !== "undefined") r.customer_name = changes.customer_name;
+  if (typeof changes.customer_email !== "undefined") r.customer_email = changes.customer_email;
+  if (typeof changes.customer_phone !== "undefined") r.customer_phone = changes.customer_phone;
+
+  await r.save();
+  return typeof r.get === "function" ? r.get({ plain: true }) : r;
+}

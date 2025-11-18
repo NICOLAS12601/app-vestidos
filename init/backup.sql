@@ -496,11 +496,21 @@ INSERT INTO `prendas` (`id`, `nombre`, `color`, `estilo`, `talle`, `precio`) VAL
 -- Estructura de tabla para la tabla `reservas`
 --
 
+DROP TABLE IF EXISTS `reservas`;
 CREATE TABLE `reservas` (
-  `reservas_id` int(11) NOT NULL,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `vestido_id` int(11) NOT NULL,
   `fecha_ini` date NOT NULL,
-  `fecha_out` date NOT NULL
+  `fecha_out` date NOT NULL,
+  `customer_name` varchar(255) DEFAULT NULL,
+  `customer_email` varchar(255) DEFAULT NULL,
+  `customer_phone` varchar(50) DEFAULT NULL,
+  `status` varchar(50) DEFAULT 'active',
+  `createdAt` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updatedAt` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `vestido_id` (`vestido_id`),
+  CONSTRAINT `reservas_ibfk_1` FOREIGN KEY (`vestido_id`) REFERENCES `prendas` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Registros de reservas de las prendas';
 
 -- --------------------------------------------------------
@@ -529,7 +539,7 @@ ALTER TABLE `prendas`
 -- Indices de la tabla `reservas`
 --
 ALTER TABLE `reservas`
-  ADD PRIMARY KEY (`reservas_id`),
+  ADD PRIMARY KEY (`id`),
   ADD KEY `vestido_id` (`vestido_id`);
 
 --
@@ -552,7 +562,7 @@ ALTER TABLE `prendas`
 -- AUTO_INCREMENT de la tabla `reservas`
 --
 ALTER TABLE `reservas`
-  MODIFY `reservas_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT de la tabla `usuarios`

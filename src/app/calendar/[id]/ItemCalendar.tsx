@@ -45,7 +45,7 @@ export default function ItemCalendar({ itemId }: Props) {
               booked ? "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-200" : "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-100"
             }`}
           >
-            {d.toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+            {d.toISOString().split('T')[0]}
             {booked && <div className="mt-1">Booked</div>}
           </div>
         );
