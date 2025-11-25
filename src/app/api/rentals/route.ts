@@ -42,10 +42,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "La fecha final debe ser posterior a la inicial" }, { status: 400 });
     }
 
-    // Verificar disponibilidad
+    // Verificar disponibilidad (excluyendo reservas canceladas)
     const existingReserva = await Reserva.findOne({
       where: {
         vestido_id: itemId,
+        status: { [Op.ne]: "cancelled" },
         [Op.or]: [
           {
             fecha_ini: { [Op.between]: [start, end] }
@@ -66,13 +67,18 @@ export async function POST(req: Request) {
       vestido_id: itemId,
       fecha_ini: start,
       fecha_out: end,
-      
-     
+      customer_name: name,
+      customer_email: email,
+      customer_phone: phone,
+      status: "pending",
     });
 
-    // Redireccionar con mensaje de éxito
-    const res = NextResponse.redirect(new URL(`/items/${itemId}?success=1`, req.url));
-    return res;
+    // Devolver JSON en lugar de redirigir para que el cliente maneje el toast
+    return NextResponse.json({ 
+      success: true, 
+      message: "Reserva creada exitosamente",
+      reservaId: reserva.id 
+    }, { status: 200 });
 
   } catch (err) {
     console.error("Error creating rental:", err);
