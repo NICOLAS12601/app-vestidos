@@ -1,5 +1,8 @@
-// ...existing code...
-let _sequelize: any | null = null;
+import type { Sequelize as SequelizeType } from "sequelize";
+import { Sequelize } from "sequelize";
+import mysql2 from "mysql2";
+
+let _sequelize: SequelizeType | null = null;
 
 export function getSequelize() {
   console.log('[db-node] getSequelize called', { cwd: process.cwd(), NODE_ENV: process.env.NODE_ENV, NEXT_RUNTIME: process.env.NEXT_RUNTIME });
@@ -8,19 +11,26 @@ export function getSequelize() {
 
   try {
     console.log('[db-node] requiring mysql2...');
-    const mysql2 = require("mysql2");
     console.log('[db-node] mysql2 required OK');
 
-    const { Sequelize } = require("sequelize");
+    const dbConfig = {
+      database: process.env.DB_NAME ?? "vestidos",
+      username: process.env.DB_USER ?? "root",
+      password: process.env.DB_PASS ?? "root",
+      host: process.env.DB_HOST ?? "localhost",
+      port: process.env.DB_PORT ? parseInt(process.env.DB_PORT) : 3306,
+    };
+    
+    console.log('[db-node] DB Config:', { ...dbConfig, password: dbConfig.password ? '***' : 'undefined' });
 
     _sequelize = new Sequelize(
-      process.env.DB_NAME ?? "vestidos",
-      process.env.DB_USER ?? "root",
-      process.env.DB_PASS ?? "root",
+      dbConfig.database,
+      dbConfig.username,
+      dbConfig.password,
       {
-        host: "localhost",
+        host: dbConfig.host,
         dialect: "mysql",
-        port: 3306,
+        port: dbConfig.port,
         logging: false,
         // <-- evitar require dinámico dentro de Sequelize pasando el módulo explícitamente
         dialectModule: mysql2,

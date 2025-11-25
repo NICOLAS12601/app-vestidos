@@ -472,12 +472,13 @@ USE `vestidos`;
 --
 
 CREATE TABLE `prendas` (
-  `id` int(11) NOT NULL,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `nombre` varchar(100) NOT NULL,
   `color` varchar(50) DEFAULT NULL,
   `estilo` varchar(100) DEFAULT NULL,
   `talle` varchar(10) DEFAULT NULL,
-  `precio` decimal(10,2) NOT NULL
+  `precio` decimal(10,2) NOT NULL,
+  PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='informacion de los vestidos y chaquetas disponibles.';
 
 --
@@ -530,19 +531,6 @@ CREATE TABLE `usuarios` (
 --
 
 --
--- Indices de la tabla `prendas`
---
-ALTER TABLE `prendas`
-  ADD PRIMARY KEY (`id`);
-
---
--- Indices de la tabla `reservas`
---
-ALTER TABLE `reservas`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `vestido_id` (`vestido_id`);
-
---
 -- Indices de la tabla `usuarios`
 --
 ALTER TABLE `usuarios`
@@ -554,9 +542,8 @@ ALTER TABLE `usuarios`
 
 --
 -- AUTO_INCREMENT de la tabla `prendas`
+-- (Ya definido en CREATE TABLE)
 --
-ALTER TABLE `prendas`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT de la tabla `reservas`
@@ -576,9 +563,8 @@ ALTER TABLE `usuarios`
 
 --
 -- Filtros para la tabla `reservas`
+-- (Ya definido en CREATE TABLE)
 --
-ALTER TABLE `reservas`
-  ADD CONSTRAINT `reservas_ibfk_1` FOREIGN KEY (`vestido_id`) REFERENCES `prendas` (`id`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
