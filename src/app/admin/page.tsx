@@ -6,13 +6,13 @@ import {
   updateItem,
   deleteItem,
   updateRental,
-  getItem,
   cancelRental,
   approveRental, // <-- agregar
 } from "@/lib/RentalManagementSystem";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { unstable_noStore as noStore, revalidatePath } from "next/cache";
+import InventoryTable from "@/components/InventoryTable";
 
 export const dynamic = "force-dynamic";
 
@@ -103,7 +103,7 @@ async function approveRentalAction(formData: FormData) {
   revalidatePath("/admin");
 }
 
-export default async function Page({ searchParams }: { searchParams?: { editItem?: string; editRental?: string } }) {
+export default async function Page({ searchParams }: { searchParams?: { editRental?: string } }) {
   noStore();
   if (!isAdmin()) redirect("/admin/login");
   const csrf = await getOrCreateCsrfToken();
@@ -116,9 +116,7 @@ export default async function Page({ searchParams }: { searchParams?: { editItem
   const rentals = toArray<any>(rentalsRaw).map(toPlain);
 
   // Datos para edición
-  const editItemId = searchParams?.editItem;
   const editRentalId = searchParams?.editRental;
-  const itemForEdit = editItemId ? await getItem(editItemId) : null;
   const rentalForEdit = editRentalId ? rentals.find((r: any) => String(r.id ?? r.ID ?? r._id) === String(editRentalId)) : null;
 
   return (
@@ -170,78 +168,7 @@ export default async function Page({ searchParams }: { searchParams?: { editItem
         </div>
 
         {/* Listado */}
-        <div className="mt-3 overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr className="text-left">
-                <th className="py-2 pr-4">ID</th>
-                <th className="py-2 pr-4">Name</th>
-                <th className="py-2 pr-4">Color</th>
-                <th className="py-2 pr-4">Style</th>
-                <th className="py-2 pr-4">Sizes</th>
-                <th className="py-2 pr-4">Price/day</th>
-                <th className="py-2 pr-0 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((i: any) => (
-                <tr key={String(i.id)} className="border-t hover:bg-slate-50 dark:hover:bg-slate-800 group">
-                  <td className="py-2 pr-4 relative">
-                    <Link href={`?editItem=${String(i.id)}`} className="absolute inset-0 cursor-pointer" aria-label="Edit item" />
-                    {String(i.id)}
-                  </td>
-                  <td className="py-2 pr-4">{i.name ?? "-"}</td>
-                  <td className="py-2 pr-4">{i.color ?? "-"}</td>
-                  <td className="py-2 pr-4">{i.style ?? "-"}</td>
-                  <td className="py-2 pr-4">
-                    {Array.isArray(i.sizes) ? i.sizes.join(", ") : ""}
-                  </td>
-                  <td className="py-2 pr-4">${Number(i.pricePerDay ?? 0).toFixed(2)}</td>
-                  <td className="py-2 pl-4 pr-0 text-right">
-                    <form action={deleteItemAction} className="relative z-10 inline">
-                      <input type="hidden" name="id" value={String(i.id)} />
-                      <button className="rounded border px-2 py-1 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 cursor-pointer">Delete</button>
-                    </form>
-                  </td>
-                </tr>
-              ))}
-              {items.length === 0 && (
-                <tr>
-                  <td className="py-3 text-slate-500" colSpan={7}>No items.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Panel de edición de item */}
-        {itemForEdit && (
-          <div className="mt-6 p-4 border rounded-lg">
-            <h3 className="font-semibold mb-3">Edit product #{String(itemForEdit.id)}</h3>
-            <form action={updateItemAction} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <input type="hidden" name="id" value={String(itemForEdit.id)} />
-              <label className="text-xs font-semibold">Nombre
-                <input name="nombre" defaultValue={itemForEdit.raw?.nombre ?? itemForEdit.name ?? ""} className="mt-1 w-full border rounded px-2 py-1" />
-              </label>
-              <label className="text-xs font-semibold">Color
-                <input name="color" defaultValue={itemForEdit.raw?.color ?? itemForEdit.color ?? ""} className="mt-1 w-full border rounded px-2 py-1" />
-              </label>
-              <label className="text-xs font-semibold">Estilo
-                <input name="estilo" defaultValue={itemForEdit.raw?.estilo ?? itemForEdit.style ?? ""} className="mt-1 w-full border rounded px-2 py-1" />
-              </label>
-              <label className="text-xs font-semibold">Talles (CSV)
-                <input name="talle" defaultValue={itemForEdit.raw?.talle ?? (Array.isArray(itemForEdit.sizes) ? itemForEdit.sizes.join(",") : "")} className="mt-1 w-full border rounded px-2 py-1" />
-              </label>
-              <label className="text-xs font-semibold">Precio por día
-                <input name="precio" type="number" step="0.01" min="0" defaultValue={String(itemForEdit.raw?.precio ?? itemForEdit.pricePerDay ?? "0")} className="mt-1 w-full border rounded px-2 py-1" />
-              </label>
-              <div className="col-span-full flex gap-2 mt-2">
-                <button className="bg-blue-600 text-white px-3 py-2 rounded hover:bg-blue-700 cursor-pointer">Save</button>
-                <Link href="/admin" className="border px-3 py-2 rounded hover:bg-slate-50 dark:hover:bg-slate-800">Cancel</Link>
-              </div>
-            </form>
-          </div>
-        )}
+        <InventoryTable items={items} deleteItemAction={deleteItemAction} updateItemAction={updateItemAction} />
       </section>
 
       <section className="mt-10">
@@ -280,13 +207,13 @@ export default async function Page({ searchParams }: { searchParams?: { editItem
                     <div className="relative z-10 flex gap-2">
                       {(r.status ?? r.state) === "pending" && (
                         <>
-                          <form action={approveRentalAction} method="POST" className="inline">
+                          <form action={approveRentalAction} className="inline">
                             <input type="hidden" name="rid" value={String(r.id ?? r.ID ?? r._id)} />
                             <button className="rounded-lg border px-3 py-1 bg-green-50 text-green-700 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-300 dark:hover:bg-green-900/50 cursor-pointer">
                               Approve
                             </button>
                           </form>
-                          <form action={cancelRentalAction} method="POST" className="inline">
+                          <form action={cancelRentalAction} className="inline">
                             <input type="hidden" name="rid" value={String(r.id ?? r.ID ?? r._id)} />
                             <button className="rounded-lg border px-3 py-1 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer">
                               Cancel
