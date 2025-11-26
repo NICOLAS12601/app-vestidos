@@ -89,10 +89,22 @@ export async function listItems(filters?: {
 
     let rows: Prenda[];
     try {
+        // Intentar obtener todas las columnas, si falla por falta de columna imagen, usar attributes
         rows = await Prenda.findAll({ where, order: [["id", "ASC"]] });
-    } catch (err) {
-        console.error("Error en listItems:", err);
-        rows = [];
+    } catch (err: unknown) {
+        // Si el error es por columna 'imagen' no encontrada, intentar sin esa columna
+        const error = err as { parent?: { code?: string }; sql?: string };
+        if (error?.parent?.code === 'ER_BAD_FIELD_ERROR' && error?.sql?.includes('imagen')) {
+            console.warn("Columna 'imagen' no existe en la base de datos. Ejecuta el script init/add_imagen_column.sql para agregarla.");
+            rows = await Prenda.findAll({ 
+                where, 
+                order: [["id", "ASC"]],
+                attributes: ['id', 'nombre', 'color', 'estilo', 'talle', 'precio']
+            });
+        } else {
+            console.error("Error en listItems:", err);
+            rows = [];
+        }
     }
 
     return rows.map((r: Prenda) => {
@@ -116,7 +128,7 @@ export async function listItems(filters?: {
                 : [],
             color: data.color ?? "",
             style: data.estilo ?? "",
-            images: [],
+            images: data.imagen ? [data.imagen] : [],
             alt: data.nombre ?? "",
             raw: data as unknown as Record<string, unknown>,
         } as Item;
@@ -125,7 +137,20 @@ export async function listItems(filters?: {
 
 export async function getItem(id: number | string) {
     const { Prenda } = await ensureInit();
-    const item = await Prenda.findByPk(id);
+    let item;
+    try {
+        item = await Prenda.findByPk(id);
+    } catch (err: unknown) {
+        // Si el error es por columna 'imagen' no encontrada, intentar sin esa columna
+        const error = err as { parent?: { code?: string }; sql?: string };
+        if (error?.parent?.code === 'ER_BAD_FIELD_ERROR' && error?.sql?.includes('imagen')) {
+            item = await Prenda.findByPk(id, {
+                attributes: ['id', 'nombre', 'color', 'estilo', 'talle', 'precio']
+            });
+        } else {
+            throw err;
+        }
+    }
     if (!item) return null;
 
     const data = typeof item.get === "function" ? item.get({ plain: true }) : item;
@@ -149,7 +174,7 @@ export async function getItem(id: number | string) {
             : [],
         color: data.color ?? "",
         style: data.estilo ?? "",
-        images: [],
+        images: data.imagen ? [data.imagen] : [],
         alt: data.nombre ?? "",
         raw: data as unknown as Record<string, unknown>,
     } as Item;
@@ -286,6 +311,7 @@ export async function createItem(payload: {
     estilo?: string;
     talle?: string; // CSV: "XS,S,M"
     precio: number | string;
+    imagen?: string | null;
 }) {
     const { Prenda } = await ensureInit();
     const precio =
@@ -296,13 +322,32 @@ export async function createItem(payload: {
                 return isNaN(p) ? 0 : p;
             })();
 
-    const created = await Prenda.create({
-        nombre: payload.nombre,
-        color: payload.color ?? undefined,
-        estilo: payload.estilo ?? undefined,
-        talle: payload.talle ?? null,
-        precio,
-    });
+    let created;
+    try {
+        created = await Prenda.create({
+            nombre: payload.nombre,
+            color: payload.color ?? undefined,
+            estilo: payload.estilo ?? undefined,
+            talle: payload.talle ?? null,
+            precio,
+            imagen: payload.imagen ?? null,
+        });
+    } catch (err: unknown) {
+        // Si el error es por columna 'imagen' no encontrada, crear sin esa columna
+        const error = err as { parent?: { code?: string }; sql?: string };
+        if (error?.parent?.code === 'ER_BAD_FIELD_ERROR' && error?.sql?.includes('imagen')) {
+            console.warn("Columna 'imagen' no existe en la base de datos. Creando sin imagen. Ejecuta el script init/add_imagen_column.sql para agregarla.");
+            created = await Prenda.create({
+                nombre: payload.nombre,
+                color: payload.color ?? undefined,
+                estilo: payload.estilo ?? undefined,
+                talle: payload.talle ?? null,
+                precio,
+            });
+        } else {
+            throw err;
+        }
+    }
 
     return typeof created.get === "function" ? created.get({ plain: true }) : created;
 }
@@ -310,7 +355,7 @@ export async function createItem(payload: {
 // Actualizar prenda
 export async function updateItem(
     id: number | string,
-    changes: Partial<{ nombre: string; color: string; estilo: string; talle: string; precio: number | string }>
+    changes: Partial<{ nombre: string; color: string; estilo: string; talle: string; precio: number | string; imagen: string | null }>
 ) {
     const { Prenda } = await ensureInit();
     const item = await Prenda.findByPk(id);
@@ -320,6 +365,19 @@ export async function updateItem(
     if (typeof changes.color !== "undefined") item.color = changes.color;
     if (typeof changes.estilo !== "undefined") item.estilo = changes.estilo;
     if (typeof changes.talle !== "undefined") item.talle = changes.talle;
+    if (typeof changes.imagen !== "undefined") {
+        try {
+            item.imagen = changes.imagen ?? null;
+        } catch (err: unknown) {
+            // Si la columna imagen no existe, simplemente ignorar el cambio
+            const error = err as { code?: string };
+            if (error?.code === 'ER_BAD_FIELD_ERROR') {
+                console.warn("Columna 'imagen' no existe. Ignorando actualización de imagen.");
+            } else {
+                throw err;
+            }
+        }
+    }
     if (typeof changes.precio !== "undefined") {
         const precio =
             typeof changes.precio === "number"
@@ -331,7 +389,30 @@ export async function updateItem(
         item.precio = precio;
     }
 
-    await item.save();
+    try {
+        await item.save();
+    } catch (err: unknown) {
+        // Si el error es por columna 'imagen' no encontrada, intentar guardar sin esa columna
+        const error = err as { parent?: { code?: string }; sql?: string };
+        if (error?.parent?.code === 'ER_BAD_FIELD_ERROR' && error?.sql?.includes('imagen')) {
+            // Remover imagen del objeto antes de guardar
+            const itemData = typeof item.get === "function" ? item.get({ plain: true }) : item;
+            delete (itemData as unknown as Record<string, unknown>).imagen;
+            // Guardar solo los campos que existen
+            await Prenda.update(
+                {
+                    nombre: item.nombre,
+                    color: item.color,
+                    estilo: item.estilo,
+                    talle: item.talle,
+                    precio: item.precio,
+                },
+                { where: { id: item.id } }
+            );
+        } else {
+            throw err;
+        }
+    }
     return typeof item.get === "function" ? item.get({ plain: true }) : item;
 }
 

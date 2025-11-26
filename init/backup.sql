@@ -478,6 +478,7 @@ CREATE TABLE `prendas` (
   `estilo` varchar(100) DEFAULT NULL,
   `talle` varchar(10) DEFAULT NULL,
   `precio` decimal(10,2) NOT NULL,
+  `imagen` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='informacion de los vestidos y chaquetas disponibles.';
 

@@ -13,6 +13,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { unstable_noStore as noStore, revalidatePath } from "next/cache";
 import InventoryTable from "@/components/InventoryTable";
+import AddProductForm from "@/components/AddProductForm";
 
 export const dynamic = "force-dynamic";
 
@@ -49,8 +50,9 @@ async function addItemAction(formData: FormData) {
   const estilo = String(formData.get("estilo") ?? "");
   const talle = String(formData.get("talle") ?? "");
   const precio = String(formData.get("precio") ?? "0");
+  const imagen = String(formData.get("imagen") ?? "");
   if (!nombre) return;
-  await createItem({ nombre, color, estilo, talle, precio });
+  await createItem({ nombre, color, estilo, talle, precio, imagen: imagen || null });
   revalidatePath("/admin");
 }
 async function deleteItemAction(formData: FormData) {
@@ -70,6 +72,7 @@ async function updateItemAction(formData: FormData) {
     estilo: String(formData.get("estilo") ?? ""),
     talle: String(formData.get("talle") ?? ""),
     precio: String(formData.get("precio") ?? "0"),
+    imagen: String(formData.get("imagen") ?? ""),
   });
   revalidatePath("/admin");
 }
@@ -103,10 +106,13 @@ async function approveRentalAction(formData: FormData) {
   revalidatePath("/admin");
 }
 
-export default async function Page({ searchParams }: { searchParams?: { editRental?: string } }) {
+export default async function Page({ searchParams }: { searchParams?: Promise<{ editRental?: string }> }) {
   noStore();
   if (!isAdmin()) redirect("/admin/login");
   const csrf = await getOrCreateCsrfToken();
+
+  // Await searchParams en Next.js 15
+  const params = await searchParams;
 
   // Await a DB (Sequelize retorna Promises)
   const [itemsRaw, rentalsRaw] = await Promise.all([listItems(), listRentals()]);
@@ -116,7 +122,7 @@ export default async function Page({ searchParams }: { searchParams?: { editRent
   const rentals = toArray<any>(rentalsRaw).map(toPlain);
 
   // Datos para edición
-  const editRentalId = searchParams?.editRental;
+  const editRentalId = params?.editRental;
   const rentalForEdit = editRentalId ? rentals.find((r: any) => String(r.id ?? r.ID ?? r._id) === String(editRentalId)) : null;
 
   return (
@@ -141,31 +147,7 @@ export default async function Page({ searchParams }: { searchParams?: { editRent
         <h2 className="font-semibold">Inventory</h2>
 
         {/* Add product */}
-        <div className="my-4 p-4 border rounded-lg bg-slate-50 dark:bg-slate-900">
-          <form action={addItemAction} className="flex flex-wrap gap-3 items-end">
-            <div>
-              <label className="block text-xs font-semibold mb-1">Nombre</label>
-              <input name="nombre" required className="border rounded px-2 py-1" />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold mb-1">Color</label>
-              <input name="color" className="border rounded px-2 py-1" />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold mb-1">Estilo</label>
-              <input name="estilo" className="border rounded px-2 py-1" placeholder="Formal, casual, etc." />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold mb-1">Talles (CSV)</label>
-              <input name="talle" className="border rounded px-2 py-1" placeholder="XS,S,M,L" />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold mb-1">Precio por día</label>
-              <input name="precio" type="number" step="0.01" min="0" required className="border rounded px-2 py-1" />
-            </div>
-            <button className="bg-blue-600 text-white px-3 py-2 rounded hover:bg-blue-700 cursor-pointer">Add product</button>
-          </form>
-        </div>
+        <AddProductForm addItemAction={addItemAction} />
 
         {/* Listado */}
         <InventoryTable items={items} deleteItemAction={deleteItemAction} updateItemAction={updateItemAction} />
