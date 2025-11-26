@@ -24,7 +24,10 @@ pipeline {
       steps {
         echo "Construyendo la imagen Docker..."
         sh """
-          docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "\$PWD":"\$PWD" -w "\$PWD" docker:27-cli sh -c '
+            docker version
+            docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
+          '
         """
       }
     }
@@ -32,35 +35,31 @@ pipeline {
     stage('Test') {
       steps {
         echo "Probando la imagen..."
-        // Ejecutar el contenedor y verificar que arranca
         sh """
-          set -e
-          # limpiar si quedó uno previo
-          docker rm -f ${CONTAINER_NAME} || true
-
-          # correr contenedor en background
-          docker run -d --name ${CONTAINER_NAME} -p ${PORT}:${PORT} ${IMAGE_NAME}:${IMAGE_TAG}
-
-          # esperar a que arranque Next.js
-          echo "Esperando a que la app levante..."
-          for i in \$(seq 1 30); do
-            sleep 2
-            if docker logs ${CONTAINER_NAME} 2>&1 | grep -q "Ready"; then
-              echo "Contenedor listo."
-              break
-            fi
-          done
-
-          # smoke test: intentar obtener la home
-          curl --fail --silent --show-error http://localhost:${PORT}/ >/dev/null
-
-          echo "Smoke test OK."
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock docker:27-cli sh -c '
+            set -e
+            docker rm -f ${CONTAINER_NAME} || true
+            docker run -d --name ${CONTAINER_NAME} -p ${PORT}:${PORT} ${IMAGE_NAME}:${IMAGE_TAG}
+            echo "Esperando a que la app levante..."
+            for i in \$(seq 1 30); do
+              sleep 2
+              if docker logs ${CONTAINER_NAME} 2>&1 | grep -q "Ready"; then
+                echo "Contenedor listo."
+                break
+              fi
+            done
+            wget -q --spider http://localhost:${PORT}/ || (echo "Smoke test failed" && exit 1)
+            echo "Smoke test OK."
+          '
         """
       }
       post {
         always {
-          // limpiar contenedor de prueba
-          sh "docker rm -f ${CONTAINER_NAME} || true"
+          sh """
+            docker run --rm -v /var/run/docker.sock:/var/run/docker.sock docker:27-cli sh -c '
+              docker rm -f ${CONTAINER_NAME} || true
+            '
+          """
         }
       }
     }
