@@ -15,9 +15,10 @@ function validateEmail(email: string): boolean {
 }
 
 function validatePhone(phone: string): boolean {
-  // Remover caracteres permitidos para contar solo dígitos
-  const digitsOnly = phone.replace(/[\s\-\(\)\+]/g, "");
-  return digitsOnly.length >= 8 && /^[\d\s\-\(\)\+]+$/.test(phone);
+  // Solo números, sin espacios ni otros caracteres
+  // Debe tener exactamente 9 dígitos y empezar por "09"
+  const digitsOnly = phone.replace(/\D/g, "");
+  return digitsOnly.length === 9 && digitsOnly.startsWith("09");
 }
 
 export async function POST(req: Request) {
@@ -46,7 +47,7 @@ export async function POST(req: Request) {
 
     // Validar formato de teléfono
     if (!validatePhone(phone)) {
-      return NextResponse.json({ error: "Por favor ingresa un teléfono válido (mínimo 8 dígitos)" }, { status: 400 });
+      return NextResponse.json({ error: "Por favor ingresa un teléfono válido (9 dígitos, sin espacios, empezando por 09)" }, { status: 400 });
     }
 
     // Inicializar DB y obtener modelos

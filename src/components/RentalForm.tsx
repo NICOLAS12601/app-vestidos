@@ -31,12 +31,12 @@ export default function RentalForm({ itemId, csrf, onRentalCreated }: RentalForm
     return emailRegex.test(email);
   };
 
-  // Validar formato de teléfono (acepta números, espacios, guiones, paréntesis, +)
-  // Debe tener al menos 8 dígitos
+  // Validar formato de teléfono
+  // Debe tener exactamente 9 dígitos, sin espacios, y empezar por "09"
   const validatePhone = (phone: string): boolean => {
-    // Remover caracteres permitidos para contar solo dígitos
-    const digitsOnly = phone.replace(/[\s\-\(\)\+]/g, "");
-    return digitsOnly.length >= 8 && /^[\d\s\-\(\)\+]+$/.test(phone);
+    // Solo números, sin espacios ni otros caracteres
+    const digitsOnly = phone.replace(/\D/g, "");
+    return digitsOnly.length === 9 && digitsOnly.startsWith("09");
   };
 
   // Validar fecha (formato YYYY-MM-DD)
@@ -90,7 +90,7 @@ export default function RentalForm({ itemId, csrf, onRentalCreated }: RentalForm
       setPhoneError("El teléfono es requerido");
       isValid = false;
     } else if (!validatePhone(phone)) {
-      setPhoneError("Por favor ingresa un teléfono válido (mínimo 8 dígitos)");
+      setPhoneError("Por favor ingresa un teléfono válido (9 dígitos, sin espacios, empezando por 09)");
       isValid = false;
     }
     
