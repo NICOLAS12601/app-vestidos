@@ -1,12 +1,14 @@
 services:
   db:
     image: mysql:8.4
-    container_name: app-vestidosgrupo5
+    container_name: app-vestidosgrupo5-db
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     ports:
-      - "${HOST_DB_PORT}:3306"
+      - "${HOST_DB_PORT:-3306}:3306"
     volumes:
       - vestidos-db-data:/var/lib/mysql
       - ./init:/docker-entrypoint-initdb.d
@@ -16,6 +18,34 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - vestidos-network
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: app-vestidosgrupo5-web
+    ports:
+      - "${HOST_APP_PORT:-3000}:3000"
+    environment:
+      - NODE_ENV=production
+      - DB_DIALECT=${DB_DIALECT}
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - vestidos-network
+    restart: unless-stopped
 
 volumes:
   vestidos-db-data:
+
+networks:
+  vestidos-network:
+    driver: bridge
