@@ -1,4 +1,3 @@
-// ...existing code...
 import { getSequelize } from '../../database/db-node';
 import ReservaDefault, { initModel as initReservaModel } from './Reserva';
 import PrendaDefault, { initModel as initPrendaModel } from './Prenda'; // asume que Prenda también exporta initModel
@@ -41,4 +40,3 @@ export async function initDb(options: { sync?: boolean } = { sync: false }) {
 }
 
 export { getSequelize as getSequelize };
-// ...existing code...

@@ -58,6 +58,15 @@ async function ensureInit() {
     return await initPromise;
 }
 
+let dbInitialized = false;
+
+async function ensureDbInitialized() {
+  if (!dbInitialized) {
+    await initDb({ sync: false });
+    dbInitialized = true;
+  }
+}
+
 /**
  * Obtiene listado de prendas. Acepta filtros opcionales.
  * Si se llama sin parámetros sigue funcionando (compatibilidad con llamadas previas).
@@ -136,6 +145,7 @@ export async function listItems(filters?: {
 }
 
 export async function getItem(id: number | string) {
+    await ensureDbInitialized();
     const { Prenda } = await ensureInit();
     let item;
     try {
@@ -181,6 +191,7 @@ export async function getItem(id: number | string) {
 }
 
 export async function getItemRentals(itemId: number | string): Promise<ReservaType[]> {
+    await ensureDbInitialized();
     const { Reserva } = await ensureInit();
     const rows = await Reserva.findAll({
         where: {
