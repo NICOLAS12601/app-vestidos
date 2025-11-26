@@ -15,7 +15,10 @@
     "docker:build": "docker-compose build",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
-    "docker:logs": "docker-compose logs -f"
+    "docker:logs": "docker-compose logs -f",
+    "playwright:install": "playwright install",
+    "test:auto": "playwright test tests/automatizacion",
+    "test:auto:ci": "playwright test tests/automatizacion --reporter=list"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
