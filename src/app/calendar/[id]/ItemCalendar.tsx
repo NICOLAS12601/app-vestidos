@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useImperativeHandle, forwardRef } from "react";
 
 type Props = { itemId: number };
 
@@ -10,15 +10,28 @@ function toISO(d: Date) {
   return d.toISOString().slice(0, 10);
 }
 
-export default function ItemCalendar({ itemId }: Props) {
+export interface ItemCalendarRef {
+  refresh: () => void;
+}
+
+const ItemCalendar = forwardRef<ItemCalendarRef, Props>(function ItemCalendar({ itemId }, ref) {
   const [busy, setBusy] = useState<Range[]>([]);
 
-  useEffect(() => {
+  const loadAvailability = () => {
     fetch(`/api/items/${itemId}/availability`)
       .then((r) => r.json())
       .then((data) => setBusy(data.rentals ?? []))
       .catch(() => setBusy([]));
+  };
+
+  useEffect(() => {
+    loadAvailability();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [itemId]);
+
+  useImperativeHandle(ref, () => ({
+    refresh: loadAvailability,
+  }));
 
   // Show next 30 days
   const today = new Date();
@@ -52,4 +65,6 @@ export default function ItemCalendar({ itemId }: Props) {
       })}
     </div>
   );
-}
+});
+
+export default ItemCalendar;

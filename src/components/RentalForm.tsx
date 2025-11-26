@@ -1,20 +1,19 @@
 "use client";
 
 import { useState, FormEvent } from "react";
-import { useRouter } from "next/navigation";
 import Toast from "./Toast";
 
 type RentalFormProps = {
   itemId: number;
   csrf: string;
+  onRentalCreated?: (startDate: string, endDate: string) => void;
 };
 
-export default function RentalForm({ itemId, csrf }: RentalFormProps) {
+export default function RentalForm({ itemId, csrf, onRentalCreated }: RentalFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [toastType, setToastType] = useState<"success" | "error">("success");
-  const router = useRouter();
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -36,13 +35,17 @@ export default function RentalForm({ itemId, csrf }: RentalFormProps) {
           setToastType("success");
           setShowToast(true);
           
+          // Obtener las fechas del formulario para notificar al calendario
+          const startDate = formData.get("start")?.toString() || "";
+          const endDate = formData.get("end")?.toString() || "";
+          
           // Limpiar el formulario
           form.reset();
           
-          // Refrescar la página después de un breve delay para actualizar el calendario
-          setTimeout(() => {
-            router.refresh();
-          }, 500);
+          // Notificar al calendario para que se actualice
+          if (onRentalCreated && startDate && endDate) {
+            onRentalCreated(startDate, endDate);
+          }
         } else {
           setToastMessage(data.error || "Error al crear la reserva");
           setToastType("error");

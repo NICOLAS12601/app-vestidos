@@ -1,10 +1,9 @@
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import {getItem, getItemRentals} from "../../../../lib/RentalManagementSystem";
-import ItemCalendar from "../../calendar/[id]/ItemCalendar";
 import {getOrCreateCsrfToken} from "../../../../lib/CsrfSessionManagement";
 import Link from "next/link";
-import RentalForm from "../../../components/RentalForm";
+import RentalSection from "../../../components/RentalSection";
 
 export default async function ItemDetail({ params }: { params: { id: string } | Promise<{ id: string }> }) {
   const { id } = (await params) as { id: string };
@@ -49,16 +48,10 @@ export default async function ItemDetail({ params }: { params: { id: string } | 
           <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">Sizes: {(item.sizes || []).join(", ")}</p>
           <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">Color: {item.color}{item.style ? ` • Style: ${item.style}` : ""}</p>
 
-          <div className="mt-8">
-            <h2 className="font-semibold mb-3">Availability</h2>
-            <ItemCalendar itemId={itemId} />
-            {booked.length > 0 && <p className="mt-2 text-xs text-slate-500">Dates marked are already booked.</p>}
-          </div>
-
-          <div className="mt-10">
-            <h2 className="font-semibold mb-3">Schedule a rental</h2>
-            <RentalForm itemId={itemId} csrf={csrf} />
-          </div>
+          <RentalSection itemId={itemId} csrf={csrf} />
+          {booked.length > 0 && (
+            <p className="mt-2 text-xs text-slate-500">Dates marked are already booked.</p>
+          )}
         </div>
       </div>
     </div>
