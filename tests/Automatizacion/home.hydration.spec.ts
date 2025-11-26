@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
-import { HomePage } from './pages/HomePage';
-import { appUrls } from './testData/urls';
+import { HomePage } from '../pages/HomePage';
+
 
 test.describe('SSR/Client Hydration - Home Page', () => {
 
