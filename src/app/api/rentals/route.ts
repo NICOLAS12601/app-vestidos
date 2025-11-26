@@ -9,6 +9,17 @@ function normalizeDate(s: string | null) {
   return m ? s : null;
 }
 
+function validateEmail(email: string): boolean {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+}
+
+function validatePhone(phone: string): boolean {
+  // Remover caracteres permitidos para contar solo dígitos
+  const digitsOnly = phone.replace(/[\s\-\(\)\+]/g, "");
+  return digitsOnly.length >= 8 && /^[\d\s\-\(\)\+]+$/.test(phone);
+}
+
 export async function POST(req: Request) {
   try {
     const form = await req.formData();
@@ -26,6 +37,16 @@ export async function POST(req: Request) {
 
     if (!itemId || !name || !email || !phone || !start || !end) {
       return NextResponse.json({ error: "Missing or invalid fields" }, { status: 400 });
+    }
+
+    // Validar formato de email
+    if (!validateEmail(email)) {
+      return NextResponse.json({ error: "Por favor ingresa un email válido (ejemplo: usuario@dominio.com)" }, { status: 400 });
+    }
+
+    // Validar formato de teléfono
+    if (!validatePhone(phone)) {
+      return NextResponse.json({ error: "Por favor ingresa un teléfono válido (mínimo 8 dígitos)" }, { status: 400 });
     }
 
     // Inicializar DB y obtener modelos
