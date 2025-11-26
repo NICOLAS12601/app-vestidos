@@ -43,6 +43,8 @@ export async function clearAdminSession() {
 }
 
 export async function isAdmin() {
-    return !!(await cookies()).get(SESSION_COOKIE)?.value;
+    const cookie = (await cookies()).get(SESSION_COOKIE);
+    // Verificar que la cookie exista y tenga un valor válido (no vacío)
+    return !!(cookie?.value && cookie.value.length > 0);
 }
 

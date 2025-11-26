@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import FAQPage from "./faq/FAQPage";
 import { useState } from "react";
+import AdminLink from "@/components/AdminLink";
 //import PrivacyPage from "./privacy/page";
 
 export default function Home() {
@@ -39,9 +40,7 @@ export default function Home() {
             <Link href="#faq" className="hover:text-fuchsia-600">FAQ</Link>
           </nav>
           <div className="flex items-center gap-3">
-            <Link href="/admin/login" className="inline-flex items-center rounded-full bg-fuchsia-600 text-white px-4 py-2 text-sm font-medium hover:bg-fuchsia-500">
-              Admin
-            </Link>
+            <AdminLink />
           </div>
         </div>
       </header>
