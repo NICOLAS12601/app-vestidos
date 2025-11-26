@@ -18,7 +18,7 @@
     "docker:logs": "docker-compose logs -f",
     "playwright:install": "playwright install",
     "test:auto": "playwright test tests/automatizacion",
-    "test:auto:ci": "playwright test tests/automatizacion --reporter=list"
+    "test:auto:ci": "playwright test tests/automatizacion --reporter=html,list"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
