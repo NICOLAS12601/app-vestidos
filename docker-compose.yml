@@ -42,6 +42,8 @@ services:
     networks:
       - vestidos-network
     restart: unless-stopped
+    stdin_open: true
+    tty: true
 
 volumes:
   vestidos-db-data:

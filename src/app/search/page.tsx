@@ -1,12 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import type { Prenda } from "@/src/types";
 
-export default function Page() {
+// Agregar esto para forzar renderizado dinámico
+export const dynamic = 'force-dynamic';
+
+function SearchContent() {
   const searchParams = useSearchParams();
   const [prendas, setPrendas] = useState<Prenda[]>([]);
   const [loading, setLoading] = useState(true);
@@ -124,5 +127,13 @@ export default function Page() {
         ))}
       </div>
     </div>
+  );
+}
+
+export default function SearchPage() {
+  return (
+    <Suspense fallback={<div className="mx-auto max-w-7xl px-4 py-10">Cargando búsqueda...</div>}>
+      <SearchContent />
+    </Suspense>
   );
 }
