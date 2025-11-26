@@ -108,7 +108,7 @@ async function approveRentalAction(formData: FormData) {
 
 export default async function Page({ searchParams }: { searchParams?: Promise<{ editRental?: string }> }) {
   noStore();
-  if (!isAdmin()) redirect("/admin/login");
+  if (!(await isAdmin())) redirect("/admin/login");
   const csrf = await getOrCreateCsrfToken();
 
   // Await searchParams en Next.js 15

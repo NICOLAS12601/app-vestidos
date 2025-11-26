@@ -24,11 +24,14 @@ export async function verifyCsrfToken(formToken: string | null | undefined) {
 export async function setAdminSession() {
     const token = crypto.randomUUID();
     const c = await cookies();
+    // Sesión válida por 7 días (7 * 24 * 60 * 60 segundos)
+    const maxAge = 7 * 24 * 60 * 60;
     c.set(SESSION_COOKIE, token, {
         httpOnly: true,
         sameSite: "lax",
         secure: process.env.NODE_ENV === "production",
         path: "/",
+        maxAge: maxAge,
     });
     return token;
 }

@@ -7,6 +7,7 @@ export default async function AdminLogin({ searchParams }: { searchParams?: { er
   let errorMessage = "";
   if (error === "invalid_credentials") errorMessage = "Invalid username or password.";
   if (error === "invalid_csrf") errorMessage = "Invalid security token. Please try again.";
+  if (error === "server_error") errorMessage = "Server error. Please try again later.";
 
   return (
     <div className="relative min-h-screen">

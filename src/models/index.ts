@@ -2,6 +2,7 @@
 import { getSequelize } from '../../database/db-node';
 import ReservaDefault, { initModel as initReservaModel } from './Reserva';
 import PrendaDefault, { initModel as initPrendaModel } from './Prenda'; // asume que Prenda también exporta initModel
+import UsuarioAdminDefault, { initModel as initUsuarioAdminModel } from './UsuarioAdmin';
 
 export async function initDb(options: { sync?: boolean } = { sync: false }) {
   const sequelize = getSequelize();
@@ -20,6 +21,12 @@ export async function initDb(options: { sync?: boolean } = { sync: false }) {
     } else if ((PrendaDefault as any).init) {
       // idem
     }
+
+    if (typeof initUsuarioAdminModel === 'function') {
+      initUsuarioAdminModel(sequelize);
+    } else if ((UsuarioAdminDefault as any).init) {
+      // idem
+    }
   } catch (err) {
     // propaga el error para facilitar debugging
     throw err;
@@ -30,7 +37,7 @@ export async function initDb(options: { sync?: boolean } = { sync: false }) {
   }
 
   // Exporta las referencias de clases de modelo (no instancias)
-  return { sequelize, Reserva: ReservaDefault, Prenda: PrendaDefault };
+  return { sequelize, Reserva: ReservaDefault, Prenda: PrendaDefault, UsuarioAdmin: UsuarioAdminDefault };
 }
 
 export { getSequelize as getSequelize };
