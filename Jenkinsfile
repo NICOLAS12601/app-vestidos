@@ -43,7 +43,6 @@ pipeline {
                   if [ -f package-lock.json ]; then npm ci; else npm install; fi
                   npx playwright install --with-deps
                   npm run test:auto:ci || true
-                  npx playwright show-report --host 0.0.0.0 || true
                 '
             """
           } else {
@@ -65,25 +64,20 @@ pipeline {
       post {
         always {
           script {
-            // Publicar HTML report si existe
-            if (fileExists('playwright-report/index.html')) {
-              publishHTML([
-                reportDir: 'playwright-report',
-                reportFiles: 'index.html',
-                reportName: 'Playwright Test Report',
-                keepAll: true,
-                alwaysLinkToLastBuild: true
-              ])
-              echo "✅ Playwright report publicado en: Build Artifacts > Playwright Test Report"
+            // Archivar HTML report si existe
+            if (fileExists('playwright-report')) {
+              archiveArtifacts artifacts: 'playwright-report/**/*', allowEmptyArchive: true
+              echo "✅ Playwright report archivado en Build Artifacts"
             }
             // Mostrar resumen en consola
             sh """
               if [ -f playwright-report/index.html ]; then
                 echo "════════════════════════════════════════════════════════"
                 echo "📊 RESUMEN DE TESTS (tests/automatizacion):"
-                grep -oP '(?<=<title>).*(?=</title>)' playwright-report/index.html || echo "No se pudo extraer resumen"
-                echo "Ver reporte completo en Jenkins > Build > Playwright Test Report"
+                echo "Ver reporte completo en: Build > Artifacts > playwright-report/index.html"
                 echo "════════════════════════════════════════════════════════"
+              else
+                echo "⚠️  No se generó reporte HTML de Playwright."
               fi
             """
           }
