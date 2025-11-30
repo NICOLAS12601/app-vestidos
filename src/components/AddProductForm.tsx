@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, FormEvent } from "react";
+import { useState, FormEvent, useRef } from "react";
 import { useRouter } from "next/navigation";
 
 interface AddProductFormProps {
@@ -9,6 +9,7 @@ interface AddProductFormProps {
 
 export default function AddProductForm({ addItemAction }: AddProductFormProps) {
   const router = useRouter();
+  const formRef = useRef<HTMLFormElement>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -64,7 +65,10 @@ export default function AddProductForm({ addItemAction }: AddProductFormProps) {
       await addItemAction(formData);
       
       // Limpiar el formulario
-      e.currentTarget.reset();
+      const form = formRef.current || e.currentTarget;
+      if (form) {
+        form.reset();
+      }
       setImagePreview(null);
       setSelectedFile(null);
       
@@ -80,7 +84,7 @@ export default function AddProductForm({ addItemAction }: AddProductFormProps) {
 
   return (
     <div className="my-4 p-4 border rounded-lg bg-slate-50 dark:bg-slate-900">
-      <form onSubmit={handleSubmit} className="flex flex-wrap gap-3 items-end">
+      <form ref={formRef} onSubmit={handleSubmit} className="flex flex-wrap gap-3 items-end">
         <div>
           <label className="block text-xs font-semibold mb-1">Nombre</label>
           <input name="nombre" required className="border rounded px-2 py-1" />

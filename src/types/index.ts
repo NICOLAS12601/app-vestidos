@@ -5,4 +5,5 @@ export type Prenda = {
   estilo?: string;
   talle?: string;
   precio: number;
+  imagen?: string | null;
 }

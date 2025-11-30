@@ -2,12 +2,49 @@
 
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import type { Prenda } from "@/src/types";
 
 // Agregar esto para forzar renderizado dinámico
 export const dynamic = 'force-dynamic';
+
+function ProductImage({ src, alt, id }: { src: string | null | undefined; alt: string; id: number }) {
+  const [imgSrc, setImgSrc] = useState(src || `/images/dresses/dress-${id}.jpg`);
+  const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    setImgSrc(src || `/images/dresses/dress-${id}.jpg`);
+    setHasError(false);
+  }, [src, id]);
+
+  if (hasError || !imgSrc) {
+    return (
+      <div className="w-full h-full flex items-center justify-center text-slate-400">
+        <svg className="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        </svg>
+      </div>
+    );
+  }
+
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img 
+      src={imgSrc} 
+      alt={alt} 
+      className="w-full h-full object-cover"
+      onError={() => {
+        if (imgSrc !== `/images/dresses/dress-${id}.jpg`) {
+          // Intentar con el fallback
+          setImgSrc(`/images/dresses/dress-${id}.jpg`);
+        } else {
+          // Si el fallback también falla, mostrar placeholder
+          setHasError(true);
+        }
+      }}
+    />
+  );
+}
 
 function SearchContent() {
   const searchParams = useSearchParams();
@@ -91,14 +128,14 @@ function SearchContent() {
           </div>
         )}
 
-        {!loading && prendas.map((prenda) => (
+        {!loading && prendas.map((prenda) => {
+          return (
           <div key={prenda.id} className="rounded-2xl border bg-white dark:bg-slate-900 overflow-hidden">
             <div className="relative aspect-[3/4] bg-slate-100 dark:bg-slate-800">
-              <Image 
-                src={`/images/dresses/dress-${prenda.id}.jpg`} 
+              <ProductImage 
+                src={prenda.imagen} 
                 alt={prenda.nombre} 
-                fill 
-                className="object-cover"
+                id={prenda.id}
               />
               <div className="absolute inset-0 flex items-end p-3">
                 <span className="rounded-full bg-white/85 dark:bg-slate-800/80 px-2.5 py-1 text-xs font-medium">
@@ -124,7 +161,8 @@ function SearchContent() {
               </div>
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
