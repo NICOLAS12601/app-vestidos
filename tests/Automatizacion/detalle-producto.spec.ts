@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { appUrls } from '../testData/urls';
 
 /**
  * TC-RF-005: Detalle muestra imágenes HQ, descripción, talles y precio
@@ -20,7 +21,7 @@ test.describe('TC-RF-005: Detalle de Producto', () => {
 
     test('debe mostrar imagen principal de alta calidad', async ({ page }) => {
         // Navegar a la página de detalle de un artículo
-        await page.goto('http://localhost:3000/items/1');
+        await page.goto(appUrls.item(1));
         await page.waitForLoadState('networkidle');
 
         // Verificar que existe la imagen principal
@@ -43,7 +44,7 @@ test.describe('TC-RF-005: Detalle de Producto', () => {
     });
 
     test('debe mostrar galería de imágenes si hay múltiples imágenes', async ({ page }) => {
-        await page.goto('http://localhost:3000/items/1');
+        await page.goto(appUrls.item(1));
         await page.waitForLoadState('networkidle');
 
         // Verificar si hay galería de imágenes adicionales (slice(1) de las imágenes)
@@ -72,7 +73,7 @@ test.describe('TC-RF-005: Detalle de Producto', () => {
     });
 
     test('debe mostrar la descripción del artículo', async ({ page }) => {
-        await page.goto('http://localhost:3000/items/1');
+        await page.goto(appUrls.item(1));
         await page.waitForLoadState('networkidle');
 
         // Verificar que existe el nombre/descripción del artículo
@@ -87,7 +88,7 @@ test.describe('TC-RF-005: Detalle de Producto', () => {
     });
 
     test('debe mostrar los talles disponibles', async ({ page }) => {
-        await page.goto('http://localhost:3000/items/1');
+        await page.goto(appUrls.item(1));
         await page.waitForLoadState('networkidle');
 
         // Verificar que se muestra la información de talles
@@ -103,7 +104,7 @@ test.describe('TC-RF-005: Detalle de Producto', () => {
     });
 
     test('debe mostrar el precio de alquiler con moneda', async ({ page }) => {
-        await page.goto('http://localhost:3000/items/1');
+        await page.goto(appUrls.item(1));
         await page.waitForLoadState('networkidle');
 
         // Verificar que se muestra el precio
@@ -123,7 +124,7 @@ test.describe('TC-RF-005: Detalle de Producto', () => {
     });
 
     test('debe mostrar color y estilo del artículo', async ({ page }) => {
-        await page.goto('http://localhost:3000/items/1');
+        await page.goto(appUrls.item(1));
         await page.waitForLoadState('networkidle');
 
         // Verificar que se muestra el color
@@ -138,7 +139,7 @@ test.describe('TC-RF-005: Detalle de Producto', () => {
     });
 
     test('debe renderizar todos los elementos requeridos correctamente', async ({ page }) => {
-        await page.goto('http://localhost:3000/items/1');
+        await page.goto(appUrls.item(1));
         await page.waitForLoadState('networkidle');
 
         // Verificar que todos los elementos están presentes y visibles
@@ -179,7 +180,7 @@ test.describe('TC-RF-005: Detalle de Producto', () => {
         const itemIds = [1, 2, 3, 4];
 
         for (const itemId of itemIds) {
-            await page.goto(`http://localhost:3000/items/${itemId}`);
+            await page.goto(appUrls.item(itemId));
             await page.waitForLoadState('networkidle');
 
             // Verificar elementos básicos

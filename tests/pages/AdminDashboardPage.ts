@@ -1,4 +1,5 @@
 import { Page, Locator, expect } from '@playwright/test';
+import { appUrls } from '../testData/urls';
 
 export class AdminDashboardPage {
     readonly page: Page;
@@ -16,7 +17,7 @@ export class AdminDashboardPage {
     }
 
     async goto() {
-        await this.page.goto('http://localhost:3000/admin');
+        await this.page.goto(appUrls.admin);
         await this.expectDashboardVisible();
     }
 

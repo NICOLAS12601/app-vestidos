@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { ItemDetailPage } from '../pages/ItemDetailPage';
+import { appUrls } from '../testData/urls';
 
 /**
  * TC-RF-006: Mostrar reservadas/disponibles
@@ -207,7 +208,7 @@ test.describe('TC-RF-006: Calendario de Reservas y Disponibilidad', () => {
 
     test('debe actualizar el calendario cuando hay reservas existentes', async ({ page }) => {
         // Navegar directamente a la página de calendario si existe, o a la de detalle
-        await page.goto('http://localhost:3000/items/1');
+        await page.goto(appUrls.item(1));
         await page.waitForLoadState('networkidle');
 
         // Verificar que el calendario carga la disponibilidad desde la API
@@ -243,7 +244,7 @@ test.describe('TC-RF-006: Calendario de Reservas y Disponibilidad', () => {
 
     test('debe mostrar el calendario en la página dedicada de calendario', async ({ page }) => {
         // Verificar si existe la ruta /calendar/[id]
-        await page.goto('http://localhost:3000/calendar/1');
+        await page.goto(appUrls.calendar(1));
         await page.waitForLoadState('networkidle');
 
         // Verificar que no es una página 404

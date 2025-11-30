@@ -3,6 +3,8 @@ import { AdminDashboardPage } from '../pages/AdminDashboardPage';
 import { LoginPage } from '../pages/LoginPage';
 import { testUsers } from '../testData/credentials';
 import { ItemDetailPage } from '../pages/ItemDetailPage';
+import { generateRentalDates, generateUniqueCustomerName, generateUniqueEmail } from '../helpers';
+import { appUrls } from '../testData/urls';
 
 /**
  * TC-RF-015: Listado/Calendario con artículo, fechas y contacto
@@ -26,7 +28,7 @@ test.describe('TC-RF-015: Listado de Reservas en Admin', () => {
     test.beforeEach(async ({ page }) => {
         // Login como admin
         const loginPage = new LoginPage(page);
-        await loginPage.page.goto('http://localhost:3000/admin/login');
+        await loginPage.page.goto(appUrls.adminLogin);
         await loginPage.login(testUsers.admin.username, testUsers.admin.password);
         await loginPage.page.waitForURL(/\/admin$/, { timeout: 10000 });
     });
@@ -278,14 +280,9 @@ test.describe('TC-RF-015: Listado de Reservas en Admin', () => {
         await page.waitForLoadState('networkidle');
 
         // Crear una reserva con datos conocidos y fechas únicas
-        // Usar un offset único basado en timestamp para evitar conflictos con otros tests
-        const now = new Date();
-        const uniqueOffset = 100 + (Date.now() % 200); // 100-300 días en el futuro (más rango)
-        const startDate = new Date(now.getTime() + uniqueOffset * 24 * 60 * 60 * 1000);
-        const endDate = new Date(startDate.getTime() + 2 * 24 * 60 * 60 * 1000);
-
-        const customerName = `Test Admin List ${Date.now()}`;
-        const customerEmail = `testadmin${Date.now()}@example.com`;
+        const { startDate, endDate } = generateRentalDates(100, 2);
+        const customerName = generateUniqueCustomerName('Test Admin List');
+        const customerEmail = generateUniqueEmail('testadmin');
         const customerPhone = '091234569';
 
         // NO usar mock aquí - usar la API real para que la reserva se persista
@@ -301,22 +298,22 @@ test.describe('TC-RF-015: Listado de Reservas en Admin', () => {
             customerName,
             customerEmail,
             customerPhone,
-            startDate.toISOString().split('T')[0],
-            endDate.toISOString().split('T')[0]
+            startDate,
+            endDate
         );
 
         // Esperar la respuesta del servidor para verificar que la reserva se creó
-        const responsePromise = page.waitForResponse(response => 
-            response.url().includes('/api/rentals') && 
+        const responsePromise = page.waitForResponse(response =>
+            response.url().includes('/api/rentals') &&
             response.request().method() === 'POST'
         );
 
         await itemDetailPage.submit.click();
-        
+
         // Esperar la respuesta
         const response = await responsePromise;
         const responseData = await response.json();
-        
+
         // Verificar que la respuesta fue exitosa (200-299)
         // Si hay un conflicto (409), las fechas pueden estar ocupadas - en ese caso
         // seguimos al admin para verificar que el listado funciona con reservas existentes
@@ -329,15 +326,15 @@ test.describe('TC-RF-015: Listado de Reservas en Admin', () => {
             expect(status).toBeLessThan(400);
             expect(responseData.success).toBe(true);
         }
-        
+
         await page.waitForLoadState('networkidle');
-        
+
         // Esperar un poco más para asegurar que cualquier cambio se procesó en la BD
         await page.waitForTimeout(1000);
 
         // Ahora ir al admin para verificar que la reserva aparece (si se creó) o que el listado funciona
         const loginPage = new LoginPage(page);
-        await page.goto('http://localhost:3000/admin/login');
+        await page.goto(appUrls.adminLogin);
         await loginPage.login(testUsers.admin.username, testUsers.admin.password);
         await page.waitForURL(/\/admin$/, { timeout: 10000 });
 
@@ -352,16 +349,16 @@ test.describe('TC-RF-015: Listado de Reservas en Admin', () => {
             const allRows = adminPage.rentalsSection.locator('tbody tr');
             const rowCount = await allRows.count();
             expect(rowCount).toBeGreaterThan(0);
-            
+
             // Verificar que al menos una fila tiene los campos requeridos
             const firstRow = allRows.first();
             await expect(firstRow).toBeVisible();
-            
+
             // Verificar que la fila contiene datos (ID de artículo, fechas, contacto)
             const rowText = await firstRow.textContent();
             expect(rowText).toBeTruthy();
             expect(rowText?.length).toBeGreaterThan(0);
-            
+
             return; // Terminar aquí si hubo conflicto
         }
 
@@ -384,8 +381,8 @@ test.describe('TC-RF-015: Listado de Reservas en Admin', () => {
             // Verificar que muestra las fechas
             const datesCell = rentalRow.locator('td').nth(2);
             const dates = await datesCell.textContent();
-            expect(dates).toContain(startDate.toISOString().split('T')[0]);
-            expect(dates).toContain(endDate.toISOString().split('T')[0]);
+            expect(dates).toContain(startDate);
+            expect(dates).toContain(endDate);
 
             // Verificar que muestra el contacto
             const customerCell = rentalRow.locator('td').nth(3);

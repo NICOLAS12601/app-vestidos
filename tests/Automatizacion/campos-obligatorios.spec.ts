@@ -1,5 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { ItemDetailPage } from '../pages/ItemDetailPage';
+import { generateRentalDates } from '../helpers';
+import { appUrls } from '../testData/urls';
 
 /**
  * TC-RF-010: Campos obligatorios y vínculo con fechas del calendario
@@ -21,7 +23,7 @@ import { ItemDetailPage } from '../pages/ItemDetailPage';
 test.describe('TC-RF-010: Campos Obligatorios y Vínculo con Calendario', () => {
 
     test.beforeEach(async ({ page }) => {
-        await page.goto('http://localhost:3000/items/1');
+        await page.goto(appUrls.item(1));
         await page.waitForLoadState('networkidle');
 
         // Verificar que el formulario está presente
@@ -34,11 +36,9 @@ test.describe('TC-RF-010: Campos Obligatorios y Vínculo con Calendario', () => 
         await page.fill('input[name="phone"]', '091234567');
 
         // Las fechas son requeridas por el atributo required en HTML
-        const now = new Date();
-        const startDate = new Date(now.getTime() + 10 * 24 * 60 * 60 * 1000);
-        const endDate = new Date(startDate.getTime() + 2 * 24 * 60 * 60 * 1000);
-        await page.fill('input[name="start"]', startDate.toISOString().split('T')[0]);
-        await page.fill('input[name="end"]', endDate.toISOString().split('T')[0]);
+        const { startDate, endDate } = generateRentalDates(10, 2);
+        await page.fill('input[name="start"]', startDate);
+        await page.fill('input[name="end"]', endDate);
 
         // Intentar enviar sin nombre
         await page.getByRole('button', { name: /Request rental/i }).click();
@@ -236,40 +236,10 @@ test.describe('TC-RF-010: Campos Obligatorios y Vínculo con Calendario', () => 
         const itemDetailPage = new ItemDetailPage(page);
 
         // Definir fechas específicas
-        const now = new Date();
-        const startDate = new Date(now.getTime() + 20 * 24 * 60 * 60 * 1000);
-        const endDate = new Date(startDate.getTime() + 2 * 24 * 60 * 60 * 1000);
+        const { startDate: startDateStr, endDate: endDateStr } = generateRentalDates(20, 2);
 
-        const startDateStr = startDate.toISOString().split('T')[0];
-        const endDateStr = endDate.toISOString().split('T')[0];
-
-        // Capturar la petición POST para verificar las fechas enviadas
-        let capturedStartDate = '';
-        let capturedEndDate = '';
-
-        // Interceptar la petición antes de que se envíe
+        // Interceptar la petición para simular éxito
         await page.route('**/api/rentals', async (route) => {
-            const request = route.request();
-
-            // Para FormData, necesitamos usar postDataBuffer
-            const postDataBuffer = request.postDataBuffer();
-
-            if (postDataBuffer) {
-                // Convertir el buffer a string
-                const formDataString = postDataBuffer.toString();
-                // FormData se envía como multipart/form-data, pero podemos usar URLSearchParams si es URL-encoded
-                // O mejor, interceptar usando waitForRequest
-                try {
-                    const params = new URLSearchParams(formDataString);
-                    capturedStartDate = params.get('start') || '';
-                    capturedEndDate = params.get('end') || '';
-                } catch {
-                    // Si no es URL-encoded, intentar parsear como FormData
-                    // Para multipart, necesitaríamos un parser diferente
-                    // Por ahora, simplemente verificamos que se envió algo
-                }
-            }
-
             await route.fulfill({
                 status: 200,
                 contentType: 'application/json',

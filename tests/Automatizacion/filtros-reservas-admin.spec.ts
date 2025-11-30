@@ -3,6 +3,7 @@ import { AdminDashboardPage } from '../pages/AdminDashboardPage';
 import { LoginPage } from '../pages/LoginPage';
 import { testUsers } from '../testData/credentials';
 import { ItemDetailPage } from '../pages/ItemDetailPage';
+import { appUrls } from '../testData/urls';
 
 /**
  * TC-RF-016: Comprobar filtros por estado (pendiente/confirmado/cancelado) y por artículo/fecha
@@ -25,7 +26,7 @@ test.describe('TC-RF-016: Filtros de Reservas en Admin', () => {
     test.beforeEach(async ({ page }) => {
         // Login como admin
         const loginPage = new LoginPage(page);
-        await loginPage.page.goto('http://localhost:3000/admin/login');
+        await loginPage.page.goto(appUrls.adminLogin);
         await loginPage.login(testUsers.admin.username, testUsers.admin.password);
         await loginPage.page.waitForURL(/\/admin$/, { timeout: 10000 });
     });
@@ -83,7 +84,7 @@ test.describe('TC-RF-016: Filtros de Reservas en Admin', () => {
 
         if (hasNoRentalsMessage) {
             // Crear una reserva pendiente para el test
-            await page.goto('http://localhost:3000/items/1');
+            await page.goto(appUrls.item(1));
             await page.waitForLoadState('networkidle');
 
             const itemDetailPage = new ItemDetailPage(page);
