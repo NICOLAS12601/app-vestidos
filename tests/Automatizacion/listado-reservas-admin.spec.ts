@@ -324,7 +324,6 @@ test.describe('TC-RF-015: Listado de Reservas en Admin', () => {
         if (status === 409) {
             // Conflicto de fechas - no es un error del test, simplemente las fechas ya están ocupadas
             // Continuamos para verificar que el admin muestra reservas correctamente
-            console.log('Nota: Las fechas están ocupadas (409), verificando listado con reservas existentes');
         } else {
             // Si no hay conflicto, verificamos que la reserva se creó exitosamente
             expect(status).toBeLessThan(400);
