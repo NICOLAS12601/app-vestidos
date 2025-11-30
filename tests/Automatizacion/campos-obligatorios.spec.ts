@@ -285,20 +285,22 @@ test.describe('TC-RF-010: Campos Obligatorios y Vínculo con Calendario', () => 
             endDateStr
         );
 
-        // Esperar a que se complete la petición y verificar las fechas en los campos
-        await itemDetailPage.submit.click();
-
-        // Verificar que las fechas están en los campos antes de enviar
+        // Verificar que las fechas están en los campos ANTES de enviar
+        // (después del submit, el formulario se resetea, por eso verificamos antes)
         const startInputValue = await page.locator('input[name="start"]').inputValue();
         const endInputValue = await page.locator('input[name="end"]').inputValue();
 
         expect(startInputValue).toBe(startDateStr);
         expect(endInputValue).toBe(endDateStr);
 
+        // Ahora hacer el submit
+        await itemDetailPage.submit.click();
+
         await page.waitForLoadState('networkidle');
 
         // Verificar mensaje de éxito (esto confirma que las fechas se enviaron correctamente)
-        await expect(page.getByText(/Reserva creada exitosamente|success/i)).toBeVisible({ timeout: 10000 });
+        // El mensaje exacto es "¡Reserva creada exitosamente!" según RentalForm.tsx
+        await expect(page.getByText(/¡Reserva creada exitosamente!/i)).toBeVisible({ timeout: 10000 });
     });
 
     test('no debe exigir crear cuenta o registrarse para enviar el formulario', async ({ page }) => {

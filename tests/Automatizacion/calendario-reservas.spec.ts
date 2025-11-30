@@ -34,10 +34,13 @@ test.describe('TC-RF-006: Calendario de Reservas y Disponibilidad', () => {
         await expect(calendarGrid).toBeVisible();
 
         // Verificar que hay días en el calendario (próximos 30 días)
-        const calendarDays = calendarGrid.locator('div');
+        // El calendario muestra exactamente 30 días, pero el grid puede tener elementos adicionales
+        // Buscamos solo los divs que representan días (que tienen formato de fecha como atributo title)
+        const calendarDays = calendarGrid.locator('div[title]');
         const dayCount = await calendarDays.count();
         expect(dayCount).toBeGreaterThan(0);
-        expect(dayCount).toBeLessThanOrEqual(30);
+        // El calendario muestra exactamente 30 días según el código
+        expect(dayCount).toBe(30);
     });
 
     test('debe mostrar fechas reservadas con estado ocupado', async ({ page }) => {
