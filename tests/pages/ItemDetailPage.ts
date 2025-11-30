@@ -32,9 +32,11 @@ export class ItemDetailPage {
   }
 
   async createRental(customerName: string, email = 'test@example.com', phone = '091234567', start?: string, end?: string) {
-    // Generar fechas únicas basadas en timestamp para evitar conflictos
+    // Generar fechas únicas basadas en timestamp para evitar conflictos entre tests paralelos
     const now = new Date();
-    const startDate = start || new Date(now.getTime() + Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    // Usar milisegundos actuales para generar offset único: cada test tendrá fechas diferentes
+    const uniqueOffset = 60 + (Date.now() % 300); // 60-360 días en el futuro (más rango)
+    const startDate = start || new Date(now.getTime() + uniqueOffset * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     const endDate = end || new Date(new Date(startDate).getTime() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     
     await this.fillRentalForm(customerName, email, phone, startDate, endDate);
