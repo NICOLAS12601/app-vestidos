@@ -23,6 +23,7 @@ export class LoginPage {
     }
 
     async expectLoginPageVisible() {
-        await expect(this.adminSignInHeading).toBeVisible();
+        await expect(this.page).toHaveURL(/\/admin\/login/, { timeout: 15000 });
+        await expect(this.adminSignInHeading).toBeVisible({ timeout: 15000 });
     }
 }

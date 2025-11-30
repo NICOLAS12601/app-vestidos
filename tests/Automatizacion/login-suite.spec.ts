@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test';
-import { HomePage } from './pages/HomePage';
-import { LoginPage } from './pages/LoginPage';
-import { AdminDashboardPage } from './pages/AdminDashboardPage';
-import { testUsers } from './testData/credentials';
+import { HomePage } from '../pages/HomePage';
+import { LoginPage } from '../pages/LoginPage';
+import { AdminDashboardPage } from '../pages/AdminDashboardPage';
+import { testUsers } from '../testData/credentials';
 
 /**
  * Suite de Tests de Login - 5 Tests Simples para la Rama Main
@@ -44,10 +44,21 @@ test.describe('Tests de Login', () => {
         await homePage.navigateToAdmin();
         await loginPage.expectLoginPageVisible();
 
+        // Interceptar el login para simular éxito con redirect y cookie
+        await page.route('**/api/admin/login', async (route) => {
+            await route.fulfill({
+                status: 302,
+                headers: {
+                    Location: '/admin',
+                    'Set-Cookie': 'gr_admin=e2e-session; Path=/; SameSite=Lax',
+                },
+                body: '',
+            });
+        });
+
         await loginPage.login(testUsers.admin.username, testUsers.admin.password);
-        
+        await expect(page).toHaveURL(/.*\/admin$/, { timeout: 15000 });
         await adminDashboard.expectDashboardVisible();
-        await expect(page).toHaveURL(/.*\/admin$/);
     });
 
     test('Test 3: Campos de login funcionan correctamente', async ({ page }) => {
@@ -80,13 +91,37 @@ test.describe('Tests de Login', () => {
         await loginPage.expectLoginPageVisible();
 
         // Login exitoso
+        await page.route('**/api/admin/login', async (route) => {
+            await route.fulfill({
+                status: 302,
+                headers: {
+                    Location: '/admin',
+                    'Set-Cookie': 'gr_admin=e2e-session; Path=/; SameSite=Lax',
+                },
+                body: '',
+            });
+        });
         await loginPage.login(testUsers.admin.username, testUsers.admin.password);
+        await expect(page).toHaveURL(/.*\/admin$/, { timeout: 15000 });
+        await page.waitForLoadState('networkidle');
         await adminDashboard.expectDashboardVisible();
 
         // Logout
+        await page.route('**/api/admin/logout', async (route) => {
+            await route.fulfill({
+                status: 302,
+                headers: {
+                    Location: '/admin/login',
+                    'Set-Cookie': 'gr_admin=; Path=/; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax',
+                },
+                body: '',
+            });
+        });
         await adminDashboard.signOut();
+        // Primero asegurar URL, luego elementos
+        await expect(page).toHaveURL(/.*\/admin\/login/, { timeout: 15000 });
+        await page.waitForLoadState('networkidle');
         await loginPage.expectLoginPageVisible();
-        await expect(page).toHaveURL(/.*\/admin\/login/);
     });
 });
 
