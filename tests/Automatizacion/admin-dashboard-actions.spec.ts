@@ -77,3 +77,4 @@ test.describe('Admin Dashboard – Rentals', () => {
         await adminDashboard.expectRentalStatus(customerName, 'cancelled');
     });
 });
+
