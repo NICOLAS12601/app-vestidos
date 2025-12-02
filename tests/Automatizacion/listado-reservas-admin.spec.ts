@@ -1,7 +1,5 @@
 import { test, expect } from '@playwright/test';
 import { AdminDashboardPage } from '../pages/AdminDashboardPage';
-import { LoginPage } from '../pages/LoginPage';
-import { testUsers } from '../testData/credentials';
 import { ItemDetailPage } from '../pages/ItemDetailPage';
 import { generateRentalDates, generateUniqueCustomerName, generateUniqueEmail } from '../helpers';
 import { appUrls } from '../testData/urls';
@@ -26,11 +24,13 @@ import { appUrls } from '../testData/urls';
 test.describe('TC-RF-015: Listado de Reservas en Admin', () => {
 
     test.beforeEach(async ({ page }) => {
-        // Login como admin
-        const loginPage = new LoginPage(page);
-        await loginPage.page.goto(appUrls.adminLogin);
-        await loginPage.login(testUsers.admin.username, testUsers.admin.password);
-        await loginPage.page.waitForURL(/\/admin$/, { timeout: 10000 });
+        // Autenticar como admin vía cookie para evitar dependencias del flujo UI
+        await page.context().addCookies([{ 
+            name: 'gr_admin', 
+            value: 'e2e-session', 
+            domain: 'localhost', 
+            path: '/' 
+        }]);
     });
 
     test('debe mostrar la sección de alquileres en el dashboard', async ({ page }) => {
@@ -333,12 +333,9 @@ test.describe('TC-RF-015: Listado de Reservas en Admin', () => {
         await page.waitForTimeout(1000);
 
         // Ahora ir al admin para verificar que la reserva aparece (si se creó) o que el listado funciona
-        const loginPage = new LoginPage(page);
-        await page.goto(appUrls.adminLogin);
-        await loginPage.login(testUsers.admin.username, testUsers.admin.password);
-        await page.waitForURL(/\/admin$/, { timeout: 10000 });
-
+        // Ir al admin con sesión ya establecida por cookie
         const adminPage = new AdminDashboardPage(page);
+        await adminPage.goto();
         await adminPage.rentalsSection.waitFor({ state: 'visible' });
         await page.waitForTimeout(1000); // Esperar a que se carguen los datos
 

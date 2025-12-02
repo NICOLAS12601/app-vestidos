@@ -1,7 +1,5 @@
 import { test, expect } from '@playwright/test';
 import { AdminDashboardPage } from '../pages/AdminDashboardPage';
-import { LoginPage } from '../pages/LoginPage';
-import { testUsers } from '../testData/credentials';
 import { ItemDetailPage } from '../pages/ItemDetailPage';
 import { appUrls } from '../testData/urls';
 
@@ -24,11 +22,13 @@ import { appUrls } from '../testData/urls';
 test.describe('TC-RF-016: Filtros de Reservas en Admin', () => {
 
     test.beforeEach(async ({ page }) => {
-        // Login como admin
-        const loginPage = new LoginPage(page);
-        await loginPage.page.goto(appUrls.adminLogin);
-        await loginPage.login(testUsers.admin.username, testUsers.admin.password);
-        await loginPage.page.waitForURL(/\/admin$/, { timeout: 10000 });
+        // Autenticar como admin vía cookie para evitar dependencias del flujo UI
+        await page.context().addCookies([{ 
+            name: 'gr_admin', 
+            value: 'e2e-session', 
+            domain: 'localhost', 
+            path: '/' 
+        }]);
     });
 
     test('debe mostrar todas las reservas con sus estados', async ({ page }) => {
